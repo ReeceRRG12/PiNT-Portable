@@ -69,6 +69,8 @@ class PiNTApp:
         self.root.geometry("500x320")
         self.root.configure(bg="#1a1a2e")
 
+        os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
+
         try:
             from PIL import Image, ImageTk
             if hasattr(sys, '_MEIPASS'):
