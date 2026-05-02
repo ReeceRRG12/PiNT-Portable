@@ -27,6 +27,11 @@ def parse_lldp(pkt):
         ip_bytes = match.group(1)
         device["ip"] = f"{ip_bytes[0]}.{ip_bytes[1]}.{ip_bytes[2]}.{ip_bytes[3]}"
 
+    match = re.search(b'\xfe\x12\x00\x80\xc2\x03\x00\x01.(..)', raw)
+    if match:
+        vlan_bytes = match.group(1)
+        device["vlan"] = (vlan_bytes[0] << 8) + vlan_bytes[1]
+    
     return device
 
 # --- GUI ---
@@ -95,7 +100,8 @@ class PiNTApp:
         text = (f"Switch:  {d.get('name', 'Unknown')}\n"
                 f"Port:    {d.get('port', 'Unknown')}\n"
                 f"Model:   {d.get('description', 'Unknown')}\n"
-                f"IP:      {d.get('ip', 'Unknown')}")
+                f"IP:      {d.get('ip', 'Unknown')}\n"
+                f"VLAN:    {d.get('vlan', 'Unknown')}")
         self.result.config(text=text, fg="#00ff88")
         self.status.config(text="✅ Switch detected!", fg="#00ff88")
         self.scan_btn.config(state="normal")
