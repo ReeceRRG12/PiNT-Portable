@@ -74,7 +74,7 @@ class PiNTApp:
             if hasattr(sys, '_MEIPASS'):
                 base_path = sys._MEIPASS
             else:
-                base_path = os.path.dirname(os.path.abspath(__file__))
+                base_path = os.path.dirname(os.path.abspath(sys.argv[0]))
             logo_path = os.path.join(base_path, "logo.png")
             img = Image.open(logo_path)
             img = img.resize((80, 80))
@@ -83,8 +83,8 @@ class PiNTApp:
             logo_label.image = logo_img
             logo_label.pack(pady=5)
             root.iconphoto(True, logo_img)
-        except:
-            pass
+        except Exception as e:
+            print(f"Logo error: {e}")
 
         title = tk.Label(root, text="PiNT - Port Identifier",
                         font=("Arial", 16, "bold"),
