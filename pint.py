@@ -42,10 +42,21 @@ class PiNTApp:
         self.root.geometry("500x300")
         self.root.configure(bg="#1a1a2e")
 
-        title = tk.Label(root, text="🖧 PiNT - Port Identifier", 
+        try:
+            from PIL import Image, ImageTk
+            img = Image.open("logo.png")
+            img = img.resize((80, 80))
+            logo_img = ImageTk.PhotoImage(img)
+            logo_label = tk.Label(root, image=logo_img, bg="#1a1a2e")
+            logo_label.image = logo_img
+            logo_label.pack(pady=5)
+        except:
+            pass
+
+        title = tk.Label(root, text="PiNT - Port Identifier", 
                         font=("Arial", 16, "bold"),
                         bg="#1a1a2e", fg="#00d4ff")
-        title.pack(pady=10)
+        title.pack(pady=5)
 
         self.status = tk.Label(root, text="Press Scan to detect your switch port",
                               bg="#1a1a2e", fg="#888888")
