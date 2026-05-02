@@ -5,6 +5,36 @@ from scapy.all import sniff
 
 # --- LLDP Parser ---
 import re
+import os
+import sys
+import subprocess
+import urllib.request
+
+def check_and_install_npcap():
+    # Check if Npcap is already installed
+    npcap_path = r"C:\Windows\System32\Npcap"
+    if os.path.exists(npcap_path):
+        return True  # Already installed
+    
+    # Ask user to install
+    import tkinter.messagebox as mb
+    result = mb.askyesno(
+        "Npcap Required",
+        "PiNT requires Npcap to capture network packets.\n\n"
+        "Would you like to install it now? (Requires admin rights)"
+    )
+    
+    if result:
+        # Download and install Npcap silently
+        url = "https://npcap.com/dist/npcap-1.80.exe"
+        installer = os.path.join(os.environ["TEMP"], "npcap_installer.exe")
+        
+        mb.showinfo("Installing", "Downloading Npcap, please wait...")
+        urllib.request.urlretrieve(url, installer)
+        subprocess.run([installer], check=True)
+        return True
+    
+    return False
 
 def parse_lldp(pkt):
     raw = bytes(pkt)
@@ -134,6 +164,8 @@ class PiNTApp:
             self.status.config(text="📋 Copied to clipboard!", fg="#00d4ff")
 
 if __name__ == "__main__":
+    if sys.platform == "win32":
+        check_and_install_npcap()
     root = tk.Tk()
     app = PiNTApp(root)
     root.mainloop()
