@@ -1,39 +1,37 @@
 import tkinter as tk
-from tkinter import ttk
 import threading
-from scapy.all import sniff
-
-# --- LLDP Parser ---
 import re
 import os
 import sys
 import subprocess
 import urllib.request
+from scapy.all import sniff
 
 def check_and_install_npcap():
-    # Check if Npcap is already installed
     npcap_path = r"C:\Windows\System32\Npcap"
     if os.path.exists(npcap_path):
-        return True  # Already installed
-    
-    # Ask user to install
+        return True
+
     import tkinter.messagebox as mb
     result = mb.askyesno(
         "Npcap Required",
         "PiNT requires Npcap to capture network packets.\n\n"
         "Would you like to install it now? (Requires admin rights)"
     )
-    
+
     if result:
-        # Download and install Npcap silently
         url = "https://npcap.com/dist/npcap-1.80.exe"
         installer = os.path.join(os.environ["TEMP"], "npcap_installer.exe")
-        
         mb.showinfo("Installing", "Downloading Npcap, please wait...")
         urllib.request.urlretrieve(url, installer)
         subprocess.run([installer], check=True)
-        return True
-    
+        mb.showinfo(
+            "Restart Required",
+            "Npcap has been installed!\n\n"
+            "Please restart your PC and run PiNT again."
+        )
+        sys.exit()
+
     return False
 
 def parse_lldp(pkt):
@@ -61,29 +59,36 @@ def parse_lldp(pkt):
     if match:
         vlan_bytes = match.group(1)
         device["vlan"] = (vlan_bytes[0] << 8) + vlan_bytes[1]
-    
+
     return device
 
-# --- GUI ---
 class PiNTApp:
     def __init__(self, root):
         self.root = root
         self.root.title("PiNT - Network Tool")
-        self.root.geometry("500x300")
+        self.root.geometry("500x320")
         self.root.configure(bg="#1a1a2e")
+
+        os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
 
         try:
             from PIL import Image, ImageTk
-            img = Image.open("logo.png")
+            if hasattr(sys, '_MEIPASS'):
+                base_path = sys._MEIPASS
+            else:
+                base_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+            logo_path = os.path.join(base_path, "logo.png")
+            img = Image.open(logo_path)
             img = img.resize((80, 80))
             logo_img = ImageTk.PhotoImage(img)
             logo_label = tk.Label(root, image=logo_img, bg="#1a1a2e")
             logo_label.image = logo_img
             logo_label.pack(pady=5)
-        except:
-            pass
+            root.iconphoto(True, logo_img)
+        except Exception as e:
+            print(f"Logo error: {e}")
 
-        title = tk.Label(root, text="PiNT - Port Identifier", 
+        title = tk.Label(root, text="PiNT - Port Identifier",
                         font=("Arial", 16, "bold"),
                         bg="#1a1a2e", fg="#00d4ff")
         title.pack(pady=5)
@@ -103,7 +108,7 @@ class PiNTApp:
         btn_frame = tk.Frame(root, bg="#1a1a2e")
         btn_frame.pack(pady=5)
 
-        self.scan_btn = tk.Button(btn_frame, text="Scan", 
+        self.scan_btn = tk.Button(btn_frame, text="Scan",
                                  command=self.start_scan,
                                  bg="#00d4ff", fg="#1a1a2e",
                                  font=("Arial", 11, "bold"),
