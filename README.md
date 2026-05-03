@@ -1,5 +1,4 @@
 # 🖧 PiNT - Port Identifier Network Tool
-
 ![Version](https://img.shields.io/badge/version-v0.2-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP-green)
@@ -38,12 +37,15 @@ No Python required. Just download and run.
 ---
 
 ## 🗂️ Project Structure
+
+```
 PiNT-Portable/
 ├── pint.py          # Main application & GUI
 ├── scanner.py       # Packet capture logic
 ├── lldp_parser.py   # LLDP protocol parser
 ├── cdp_parser.py    # CDP protocol parser
 └── logo.png         # Application logo
+```
 
 ---
 
@@ -53,7 +55,11 @@ PiNT-Portable/
 |---------|-------------|
 | v0.1 | Initial release — LLDP support |
 | v0.2 | Added CDP support, refactored codebase |
-| v0.3 | Coming soon — mDNS support |
+| v0.3 | Coming soon — mDNS / Bonjour browser tab |
+| v0.4 | Planned — Extended IP & DHCP information tab |
+| v0.5 | Planned — Export to XLS / CSV for report generation |
+| v0.6 | Planned — Quick launch SSH / Telnet / HTTP(S) from management IP |
+| v0.7 | Planned — macOS support |
 
 ---
 
@@ -69,9 +75,12 @@ PiNT-Portable/
 ## 📋 Roadmap
 
 - [x] LLDP support
-- [x] CDP support  
-- [ ] mDNS support (v0.3)
-- [ ] Custom VLAN name lookup
+- [x] CDP support
+- [ ] **v0.3** — mDNS tab with Bonjour-style browser showing friendly and raw service strings
+- [ ] **v0.4** — Extended IP tab: DHCP server discovery (expandable), scope options, full IP/DNS/Gateway detail
+- [ ] **v0.5** — Export results to XLS/CSV; session-scoped export for multi-port switch audits and report generation
+- [ ] **v0.6** — Quick launch buttons (SSH / Telnet / HTTP / HTTPS) next to management IP, with live port status indicators
+- [ ] **v0.7** — macOS support
 
 ---
 
