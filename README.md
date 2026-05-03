@@ -1,6 +1,5 @@
 # 🍺 PiNT - Port Identifier Network Tool
-
-![Version](https://img.shields.io/badge/version-v0.3.2-blue)
+![Version](https://img.shields.io/badge/version-v0.5-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS-green)
 
@@ -16,6 +15,9 @@ A lightweight portable Windows tool that identifies which switch port your machi
 - **mDNS / Bonjour browser** — discovers devices broadcasting on the local network
 - **Simple / Full view toggle** — clean view for quick reference, full view for Bonjour gateway config
 - **Active IP resolution** — sends mDNS queries to resolve device IPs
+- **Extended IP & DHCP tab** — full adapter detail including DHCP server, scope options and lease info
+- **Colour-coded DHCP options** — flags standard, notable and unknown scope options at a glance
+- **Session-scoped export to XLS** — accumulate results across multiple scans and export as a single styled Excel file
 - **Export to CSV** — save mDNS scan results for reporting
 - **Copy to clipboard** — paste results directly into Teams or email
 - **Auto-installs Npcap** if not already present
@@ -50,6 +52,9 @@ PiNT-Portable/
 ├── mdns_scanner.py   # mDNS discovery & IP resolution
 ├── lldp_parser.py    # LLDP protocol parser
 ├── cdp_parser.py     # CDP protocol parser
+├── ip_info.py        # IP & DHCP information gathering
+├── session.py        # Session state manager
+├── exporter.py       # XLS export logic
 └── logo.png          # Application logo
 ```
 
@@ -64,8 +69,8 @@ PiNT-Portable/
 | v0.3 | mDNS / Bonjour browser tab |
 | v0.3.1 | CSV export, IP resolve button, Simple/Full view toggle |
 | v0.3.2 | Windows mDNS service discovery fix, About dialog |
-| v0.4 | Planned — Export to XLS / CSV for report generation |
-| v0.5 | Planned — Extended IP & DHCP information tab |
+| v0.4 | Extended IP & DHCP information tab |
+| v0.5 | Session-scoped export to XLS |
 | v0.6 | Planned — Quick launch SSH / Telnet / HTTP(S) from management IP |
 | v0.7 | Planned — macOS support |
 
@@ -76,6 +81,7 @@ PiNT-Portable/
 - Python
 - Scapy
 - Tkinter
+- openpyxl
 - PyInstaller
 
 ---
@@ -87,8 +93,8 @@ PiNT-Portable/
 - [x] **v0.3** — mDNS tab with Bonjour-style browser
 - [x] **v0.3.1** — CSV export, IP resolve button, Simple/Full view toggle
 - [x] **v0.3.2** — Windows mDNS service discovery fix, About dialog
-- [ ] **v0.4** — Export results to XLS/CSV; session-scoped export for multi-port switch audits
-- [ ] **v0.5** — Extended IP tab: DHCP server discovery, full IP/DNS/Gateway detail
+- [x] **v0.4** — Extended IP & DHCP tab with colour-coded scope options
+- [x] **v0.5** — Session-scoped XLS export with Port Scans, IP Snapshots and mDNS sheets
 - [ ] **v0.6** — Quick launch buttons (SSH / Telnet / HTTP / HTTPS) next to management IP
 - [ ] **v0.7** — macOS support
 
