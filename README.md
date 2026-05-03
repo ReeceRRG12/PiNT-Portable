@@ -74,8 +74,8 @@ PiNT-Portable/
 
 ## 📋 Roadmap
 
-- [x] LLDP support
-- [x] CDP support
+- [x] **v0.1** — LLDP support
+- [x] **v0.2** — CDP support
 - [ ] **v0.3** — mDNS tab with Bonjour-style browser showing friendly and raw service strings
 - [ ] **v0.4** — Extended IP tab: DHCP server discovery (expandable), scope options, full IP/DNS/Gateway detail
 - [ ] **v0.5** — Export results to XLS/CSV; session-scoped export for multi-port switch audits and report generation
