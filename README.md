@@ -1,6 +1,6 @@
 # 🍺 PiNT - Port Identifier Network Tool
 
-![Version](https://img.shields.io/badge/version-v0.3.1-blue)
+![Version](https://img.shields.io/badge/version-v0.3.2-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS-green)
 
@@ -62,8 +62,8 @@ PiNT-Portable/
 | v0.1 | Initial release — LLDP support |
 | v0.2 | Added CDP support, refactored codebase |
 | v0.3 | mDNS / Bonjour browser tab |
-| v0.3.1 | Bug fixes, CSV export, IP resolve button |
-| v0.3.2 | Planned — mDNS improvements, Windows IP resolution fixes |
+| v0.3.1 | CSV export, IP resolve button, Simple/Full view toggle |
+| v0.3.2 | Windows mDNS service discovery fix, About dialog |
 | v0.4 | Planned — Export to XLS / CSV for report generation |
 | v0.5 | Planned — Extended IP & DHCP information tab |
 | v0.6 | Planned — Quick launch SSH / Telnet / HTTP(S) from management IP |
@@ -86,7 +86,7 @@ PiNT-Portable/
 - [x] **v0.2** — CDP support
 - [x] **v0.3** — mDNS tab with Bonjour-style browser
 - [x] **v0.3.1** — CSV export, IP resolve button, Simple/Full view toggle
-- [ ] **v0.3.2** — mDNS improvements, Windows IP resolution fixes
+- [x] **v0.3.2** — Windows mDNS service discovery fix, About dialog
 - [ ] **v0.4** — Export results to XLS/CSV; session-scoped export for multi-port switch audits
 - [ ] **v0.5** — Extended IP tab: DHCP server discovery, full IP/DNS/Gateway detail
 - [ ] **v0.6** — Quick launch buttons (SSH / Telnet / HTTP / HTTPS) next to management IP
@@ -94,4 +94,12 @@ PiNT-Portable/
 
 ---
 
+## 📬 Contact
+
+Got questions or feedback? Reach out at **reece@pinetworktools.com**
+
+---
+
 *Built as a Python learning project — vibe coded with Claude* 🍺
+
+*Fully open source — built with ❤️ for the networking community*
