@@ -1,5 +1,5 @@
 # 🍺 PiNT - Port Identifier Network Tool
-![Version](https://img.shields.io/badge/version-v0.5-blue)
+![Version](https://img.shields.io/badge/version-v0.5.1-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS-green)
 
@@ -71,6 +71,7 @@ PiNT-Portable/
 | v0.3.2 | Windows mDNS service discovery fix, About dialog |
 | v0.4 | Extended IP & DHCP information tab |
 | v0.5 | Session-scoped export to XLS |
+| v0.5.1 | Improved About dialog with clickable links |
 | v0.6 | Planned — Quick launch SSH / Telnet / HTTP(S) from management IP |
 | v0.7 | Planned — macOS support |
 
@@ -95,6 +96,7 @@ PiNT-Portable/
 - [x] **v0.3.2** — Windows mDNS service discovery fix, About dialog
 - [x] **v0.4** — Extended IP & DHCP tab with colour-coded scope options
 - [x] **v0.5** — Session-scoped XLS export with Port Scans, IP Snapshots and mDNS sheets
+- [x] **v0.5.1** — Improved About dialog with clickable email and GitHub links
 - [ ] **v0.6** — Quick launch buttons (SSH / Telnet / HTTP / HTTPS) next to management IP
 - [ ] **v0.7** — macOS support
 

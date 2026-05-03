@@ -85,17 +85,61 @@ class PiNTApp:
         self.device_data = {}
 
     def show_about(self):
-        import tkinter.messagebox as mb
-        mb.showinfo("About PiNT",
-            "🖧 PiNT - Port Identifier Network Tool\n"
-            "Version: v0.5\n\n"
-            "A lightweight tool for field technicians to identify\n"
-            "switch ports and discover mDNS devices on a network.\n\n"
-            "Built by Reece Rainer\n\n"
-            "📧 reece@pinetworktools.com\n"
-            "🔗 github.com/ReeceRRG12/PiNT-Portable\n\n"
-            "Fully Open Source - Built with ❤️ for the networking community"
-        )
+        import webbrowser
+        win = tk.Toplevel(self.root)
+        win.title("About PiNT")
+        win.configure(bg="#1a1a2e")
+        win.resizable(False, False)
+        win.grab_set()
+
+        win.update_idletasks()
+        x = self.root.winfo_x() + (self.root.winfo_width() // 2) - 200
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - 160
+        win.geometry(f"400x320+{x}+{y}")
+
+        tk.Label(win, text="🖧 PiNT - Port Identifier Network Tool",
+                 bg="#1a1a2e", fg="#00d4ff",
+                 font=("Arial", 13, "bold")).pack(pady=(20, 4))
+
+        tk.Label(win, text="Version v0.5.1",
+                 bg="#1a1a2e", fg="#888888",
+                 font=("Arial", 10)).pack()
+
+        tk.Frame(win, bg="#0f3460", height=1).pack(fill="x", padx=30, pady=14)
+
+        tk.Label(win,
+                 text="A lightweight tool for field technicians to identify\n"
+                      "switch ports and discover mDNS devices on a network.",
+                 bg="#1a1a2e", fg="#eee",
+                 font=("Arial", 10), justify="center").pack(padx=20)
+
+        tk.Frame(win, bg="#0f3460", height=1).pack(fill="x", padx=30, pady=14)
+
+        tk.Label(win, text="Built by Reece Rainer",
+                 bg="#1a1a2e", fg="#888888",
+                 font=("Arial", 10)).pack()
+
+        def _make_link(parent, text, url):
+            lbl = tk.Label(parent, text=text,
+                           bg="#1a1a2e", fg="#00d4ff",
+                           font=("Arial", 10, "underline"),
+                           cursor="hand2")
+            lbl.pack(pady=2)
+            lbl.bind("<Button-1>", lambda e: webbrowser.open(url))
+
+        _make_link(win, "📧 reece@pinetworktools.com", "mailto:reece@pinetworktools.com")
+        _make_link(win, "🔗 github.com/ReeceRRG12/PiNT-Portable", "https://github.com/ReeceRRG12/PiNT-Portable")
+
+        tk.Label(win, text="Fully Open Source — Built with ❤️ for the networking community",
+                 bg="#1a1a2e", fg="#555",
+                 font=("Arial", 9), justify="center").pack(pady=(10, 0))
+
+        tk.Button(win, text="Close",
+                  command=win.destroy,
+                  bg="#16213e", fg="#eee",
+                  font=("Arial", 10),
+                  padx=20, relief="flat",
+                  highlightthickness=0, borderwidth=0).pack(pady=16)
 
     # ── Session listener ──────────────────────────────────────
     def _on_session_update(self):
