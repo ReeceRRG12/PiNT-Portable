@@ -7,6 +7,7 @@ import csv
 from datetime import datetime
 from scanner import scan
 from mdns_scanner import scan_mdns, resolve_mdns_ips
+from ip_info import get_ip_config, get_dhcp_options, FLAG_COLOURS
 
 class PiNTApp:
     def __init__(self, root):
@@ -67,13 +68,17 @@ class PiNTApp:
         self.notebook.add(self.mdns_tab, text="  mDNS  ")
         self.build_mdns_tab()
 
+        self.ip_tab = tk.Frame(self.notebook, bg="#1a1a2e")
+        self.notebook.add(self.ip_tab, text="  IP Info  ")
+        self.build_ip_tab()
+
         self.device_data = {}
 
     def show_about(self):
         import tkinter.messagebox as mb
         mb.showinfo("About PiNT",
             "🖧 PiNT - Port Identifier Network Tool\n"
-            "Version: v0.3.2\n\n"
+            "Version: v0.4\n\n"
             "A lightweight tool for field technicians to identify\n"
             "switch ports and discover mDNS devices on a network.\n\n"
             "Built by Reece Rainer\n\n"
@@ -406,6 +411,185 @@ class PiNTApp:
                     d.get("raw", "")
                 ])
         self.mdns_status.config(text=f"✅ Exported to {os.path.basename(filepath)}", fg="#00ff88")
+
+    # ── IP Info Tab ───────────────────────────────────────────
+    def build_ip_tab(self):
+        top_frame = tk.Frame(self.ip_tab, bg="#1a1a2e")
+        top_frame.pack(fill="x", padx=10, pady=(10, 5))
+
+        self.ip_status = tk.Label(top_frame,
+                                  text="Press Scan to load IP & DHCP information",
+                                  bg="#1a1a2e", fg="#888888")
+        self.ip_status.pack(side="left")
+
+        self.ip_scan_btn = tk.Button(top_frame, text="Scan",
+                                     command=self.start_ip_scan,
+                                     bg="#00d4ff", fg="#1a1a2e",
+                                     font=("Arial", 10, "bold"),
+                                     padx=15,
+                                     relief="flat",
+                                     highlightthickness=0,
+                                     borderwidth=0)
+        self.ip_scan_btn.pack(side="right")
+
+        # ── Scrollable canvas body ──
+        canvas_frame = tk.Frame(self.ip_tab, bg="#1a1a2e")
+        canvas_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
+
+        self.ip_canvas = tk.Canvas(canvas_frame, bg="#1a1a2e",
+                                   highlightthickness=0)
+        ip_scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical",
+                                     command=self.ip_canvas.yview)
+        self.ip_canvas.configure(yscrollcommand=ip_scrollbar.set)
+        ip_scrollbar.pack(side="right", fill="y")
+        self.ip_canvas.pack(side="left", fill="both", expand=True)
+
+        self.ip_inner = tk.Frame(self.ip_canvas, bg="#1a1a2e")
+        self.ip_canvas_window = self.ip_canvas.create_window(
+            (0, 0), window=self.ip_inner, anchor="nw"
+        )
+        self.ip_inner.bind("<Configure>", self._on_ip_inner_configure)
+        self.ip_canvas.bind("<Configure>", self._on_ip_canvas_configure)
+
+        # Mouse-wheel scroll
+        self.ip_canvas.bind("<Enter>",
+            lambda e: self.ip_canvas.bind_all("<MouseWheel>", self._on_ip_mousewheel))
+        self.ip_canvas.bind("<Leave>",
+            lambda e: self.ip_canvas.unbind_all("<MouseWheel>"))
+
+    def _on_ip_inner_configure(self, event):
+        self.ip_canvas.configure(scrollregion=self.ip_canvas.bbox("all"))
+
+    def _on_ip_canvas_configure(self, event):
+        self.ip_canvas.itemconfig(self.ip_canvas_window, width=event.width)
+
+    def _on_ip_mousewheel(self, event):
+        self.ip_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def start_ip_scan(self):
+        self.ip_scan_btn.config(state="disabled")
+        self.ip_status.config(text="Reading IP config and querying DHCP... (up to 15s)",
+                               fg="#ffaa00")
+        # Clear previous content
+        for widget in self.ip_inner.winfo_children():
+            widget.destroy()
+        thread = threading.Thread(target=self.run_ip_scan, daemon=True)
+        thread.start()
+
+    def run_ip_scan(self):
+        ip_data = get_ip_config()
+        dhcp_opts = get_dhcp_options(timeout=10) if ip_data.get("dhcp_enabled") else []
+        self.root.after(0, self.update_ip_ui, ip_data, dhcp_opts)
+
+    def update_ip_ui(self, ip_data, dhcp_opts):
+        parent = self.ip_inner
+
+        # ── Section: IP Configuration ──
+        self._ip_section_header(parent, "IP Configuration")
+
+        rows = [
+            ("Adapter",       ip_data.get("adapter", "Unknown")),
+            ("Hostname",      ip_data.get("hostname", "Unknown")),
+            ("MAC Address",   ip_data.get("mac", "Unknown")),
+            ("IP Address",    ip_data.get("ip", "Unknown")),
+            ("Subnet Mask",   ip_data.get("subnet", "Unknown")),
+            ("Gateway",       ip_data.get("gateway", "Unknown")),
+            ("Domain",        ip_data.get("domain", "Unknown")),
+        ]
+        dns_list = ip_data.get("dns", [])
+        for i, dns in enumerate(dns_list):
+            label = "DNS Server" if i == 0 else f"DNS Server {i+1}"
+            rows.append((label, dns))
+
+        for label, value in rows:
+            self._ip_row(parent, label, value)
+
+        # ── Section: DHCP ──
+        self._ip_section_header(parent, "DHCP")
+
+        dhcp_enabled = ip_data.get("dhcp_enabled", False)
+        self._ip_row(parent, "DHCP Enabled",
+                     "Yes" if dhcp_enabled else "No",
+                     value_colour="#00ff88" if dhcp_enabled else "#ff4757")
+
+        if dhcp_enabled:
+            self._ip_row(parent, "DHCP Server",  ip_data.get("dhcp_server", "Unknown"))
+            self._ip_row(parent, "Lease Obtained", ip_data.get("lease_obtained", "Unknown"))
+            self._ip_row(parent, "Lease Expires",  ip_data.get("lease_expires",  "Unknown"))
+
+            # ── Section: DHCP Scope Options ──
+            self._ip_section_header(parent, "DHCP Scope Options")
+
+            if dhcp_opts:
+                # Legend
+                legend_frame = tk.Frame(parent, bg="#1a1a2e")
+                legend_frame.pack(fill="x", padx=10, pady=(0, 6))
+                for flag, colour in [("Standard", "#00ff88"),
+                                     ("Notable",  "#ffaa00"),
+                                     ("Unknown",  "#ff4757")]:
+                    dot = tk.Label(legend_frame, text="●", fg=colour,
+                                   bg="#1a1a2e", font=("Arial", 9))
+                    dot.pack(side="left")
+                    tk.Label(legend_frame, text=f" {flag}   ",
+                             fg="#888888", bg="#1a1a2e",
+                             font=("Arial", 9)).pack(side="left")
+
+                for opt_num, label, value, flag in dhcp_opts:
+                    colour = FLAG_COLOURS.get(flag, "#eee")
+                    self._ip_option_row(parent, opt_num, label, value, colour)
+            else:
+                tk.Label(parent,
+                         text="No scope options returned by DHCP server.",
+                         bg="#1a1a2e", fg="#888888",
+                         font=("Arial", 10)).pack(padx=10, pady=4, anchor="w")
+        else:
+            tk.Label(parent,
+                     text="DHCP is not enabled on this adapter.",
+                     bg="#1a1a2e", fg="#888888",
+                     font=("Arial", 10)).pack(padx=10, pady=4, anchor="w")
+
+        self.ip_status.config(text="✅ IP & DHCP information loaded", fg="#00ff88")
+        self.ip_scan_btn.config(state="normal")
+
+    def _ip_section_header(self, parent, text):
+        frame = tk.Frame(parent, bg="#0f3460")
+        frame.pack(fill="x", padx=0, pady=(10, 2))
+        tk.Label(frame, text=text,
+                 bg="#0f3460", fg="#00d4ff",
+                 font=("Arial", 10, "bold"),
+                 padx=10, pady=4).pack(anchor="w")
+
+    def _ip_row(self, parent, label, value, value_colour="#eee"):
+        frame = tk.Frame(parent, bg="#16213e")
+        frame.pack(fill="x", padx=0, pady=1)
+        tk.Label(frame, text=label,
+                 bg="#16213e", fg="#888888",
+                 font=("Arial", 10), width=18, anchor="w",
+                 padx=10).pack(side="left")
+        tk.Label(frame, text=value,
+                 bg="#16213e", fg=value_colour,
+                 font=("Arial", 10), anchor="w").pack(side="left", padx=(0, 10))
+
+    def _ip_option_row(self, parent, opt_num, label, value, colour):
+        frame = tk.Frame(parent, bg="#16213e")
+        frame.pack(fill="x", padx=0, pady=1)
+        # Colour dot
+        tk.Label(frame, text="●", fg=colour,
+                 bg="#16213e", font=("Arial", 9),
+                 padx=6).pack(side="left")
+        # Option number badge
+        tk.Label(frame, text=f"{opt_num:>3}",
+                 bg="#16213e", fg="#555",
+                 font=("Arial", 9, "bold"),
+                 width=3).pack(side="left")
+        # Label
+        tk.Label(frame, text=label,
+                 bg="#16213e", fg="#888888",
+                 font=("Arial", 10), width=22, anchor="w").pack(side="left")
+        # Value
+        tk.Label(frame, text=value,
+                 bg="#16213e", fg=colour,
+                 font=("Arial", 10), anchor="w").pack(side="left", padx=(0, 10))
 
 
 # ── Npcap installer (Windows only) ───────────────────────────
