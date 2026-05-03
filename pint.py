@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, filedialog
 import threading
 import os
 import sys
@@ -8,6 +8,8 @@ from datetime import datetime
 from scanner import scan
 from mdns_scanner import scan_mdns, resolve_mdns_ips
 from ip_info import get_ip_config, get_dhcp_options, FLAG_COLOURS
+from session import SessionManager
+from exporter import export_xlsx
 
 class PiNTApp:
     def __init__(self, root):
@@ -15,6 +17,10 @@ class PiNTApp:
         self.root.title("PiNT - Network Tool")
         self.root.geometry("500x520")
         self.root.configure(bg="#1a1a2e")
+
+        # ── Session manager ──────────────────────────────────
+        self.session = SessionManager()
+        self.session.register_listener(self._on_session_update)
 
         try:
             from PIL import Image, ImageTk
@@ -72,13 +78,17 @@ class PiNTApp:
         self.notebook.add(self.ip_tab, text="  IP Info  ")
         self.build_ip_tab()
 
+        self.export_tab = tk.Frame(self.notebook, bg="#1a1a2e")
+        self.notebook.add(self.export_tab, text="  Export  ")
+        self.build_export_tab()
+
         self.device_data = {}
 
     def show_about(self):
         import tkinter.messagebox as mb
         mb.showinfo("About PiNT",
             "🖧 PiNT - Port Identifier Network Tool\n"
-            "Version: v0.4\n\n"
+            "Version: v0.5\n\n"
             "A lightweight tool for field technicians to identify\n"
             "switch ports and discover mDNS devices on a network.\n\n"
             "Built by Reece Rainer\n\n"
@@ -86,6 +96,11 @@ class PiNTApp:
             "🔗 github.com/ReeceRRG12/PiNT-Portable\n\n"
             "Fully Open Source - Built with ❤️ for the networking community"
         )
+
+    # ── Session listener ──────────────────────────────────────
+    def _on_session_update(self):
+        """Called automatically whenever the session changes."""
+        self.root.after(0, self._refresh_export_tab)
 
     # ── Port ID Tab ──────────────────────────────────────────
     def build_port_tab(self):
@@ -151,6 +166,8 @@ class PiNTApp:
             self.device_data = device
             self.result.config(text=text, fg="#00ff88")
             self.status.config(text=f"✅ Switch detected via {protocol}!", fg=protocol_color)
+            # ── Log to session ──
+            self.session.add_port_scan(device)
         else:
             self.result.config(
                 text="No switch detected.\nAre you plugged into a managed switch?",
@@ -322,6 +339,9 @@ class PiNTApp:
         self.resolve_btn.config(state="normal")
         self.mdns_export_btn.config(state="normal")
         self.mdns_copy_btn.config(state="normal")
+        # ── Log to session ──
+        if devices:
+            self.session.add_mdns_scan(devices)
 
     def apply_mdns_filter(self, *args):
         query = self.mdns_filter_var.get().lower()
@@ -389,7 +409,6 @@ class PiNTApp:
     def export_mdns_csv(self):
         if not self.mdns_results:
             return
-        from tkinter import filedialog
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         default_name = f"pint_mdns_{timestamp}.csv"
         filepath = filedialog.asksaveasfilename(
@@ -432,7 +451,6 @@ class PiNTApp:
                                      borderwidth=0)
         self.ip_scan_btn.pack(side="right")
 
-        # ── Scrollable canvas body ──
         canvas_frame = tk.Frame(self.ip_tab, bg="#1a1a2e")
         canvas_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
 
@@ -451,7 +469,6 @@ class PiNTApp:
         self.ip_inner.bind("<Configure>", self._on_ip_inner_configure)
         self.ip_canvas.bind("<Configure>", self._on_ip_canvas_configure)
 
-        # Mouse-wheel scroll
         self.ip_canvas.bind("<Enter>",
             lambda e: self.ip_canvas.bind_all("<MouseWheel>", self._on_ip_mousewheel))
         self.ip_canvas.bind("<Leave>",
@@ -470,7 +487,6 @@ class PiNTApp:
         self.ip_scan_btn.config(state="disabled")
         self.ip_status.config(text="Reading IP config and querying DHCP... (up to 15s)",
                                fg="#ffaa00")
-        # Clear previous content
         for widget in self.ip_inner.winfo_children():
             widget.destroy()
         thread = threading.Thread(target=self.run_ip_scan, daemon=True)
@@ -484,7 +500,6 @@ class PiNTApp:
     def update_ip_ui(self, ip_data, dhcp_opts):
         parent = self.ip_inner
 
-        # ── Section: IP Configuration ──
         self._ip_section_header(parent, "IP Configuration")
 
         rows = [
@@ -496,15 +511,13 @@ class PiNTApp:
             ("Gateway",       ip_data.get("gateway", "Unknown")),
             ("Domain",        ip_data.get("domain", "Unknown")),
         ]
-        dns_list = ip_data.get("dns", [])
-        for i, dns in enumerate(dns_list):
+        for i, dns in enumerate(ip_data.get("dns", [])):
             label = "DNS Server" if i == 0 else f"DNS Server {i+1}"
             rows.append((label, dns))
 
         for label, value in rows:
             self._ip_row(parent, label, value)
 
-        # ── Section: DHCP ──
         self._ip_section_header(parent, "DHCP")
 
         dhcp_enabled = ip_data.get("dhcp_enabled", False)
@@ -513,23 +526,20 @@ class PiNTApp:
                      value_colour="#00ff88" if dhcp_enabled else "#ff4757")
 
         if dhcp_enabled:
-            self._ip_row(parent, "DHCP Server",  ip_data.get("dhcp_server", "Unknown"))
+            self._ip_row(parent, "DHCP Server",    ip_data.get("dhcp_server", "Unknown"))
             self._ip_row(parent, "Lease Obtained", ip_data.get("lease_obtained", "Unknown"))
             self._ip_row(parent, "Lease Expires",  ip_data.get("lease_expires",  "Unknown"))
 
-            # ── Section: DHCP Scope Options ──
             self._ip_section_header(parent, "DHCP Scope Options")
 
             if dhcp_opts:
-                # Legend
                 legend_frame = tk.Frame(parent, bg="#1a1a2e")
                 legend_frame.pack(fill="x", padx=10, pady=(0, 6))
                 for flag, colour in [("Standard", "#00ff88"),
                                      ("Notable",  "#ffaa00"),
                                      ("Unknown",  "#ff4757")]:
-                    dot = tk.Label(legend_frame, text="●", fg=colour,
-                                   bg="#1a1a2e", font=("Arial", 9))
-                    dot.pack(side="left")
+                    tk.Label(legend_frame, text="●", fg=colour,
+                             bg="#1a1a2e", font=("Arial", 9)).pack(side="left")
                     tk.Label(legend_frame, text=f" {flag}   ",
                              fg="#888888", bg="#1a1a2e",
                              font=("Arial", 9)).pack(side="left")
@@ -547,6 +557,9 @@ class PiNTApp:
                      text="DHCP is not enabled on this adapter.",
                      bg="#1a1a2e", fg="#888888",
                      font=("Arial", 10)).pack(padx=10, pady=4, anchor="w")
+
+        # ── Log to session ──
+        self.session.add_ip_snapshot(ip_data, dhcp_opts)
 
         self.ip_status.config(text="✅ IP & DHCP information loaded", fg="#00ff88")
         self.ip_scan_btn.config(state="normal")
@@ -573,23 +586,150 @@ class PiNTApp:
     def _ip_option_row(self, parent, opt_num, label, value, colour):
         frame = tk.Frame(parent, bg="#16213e")
         frame.pack(fill="x", padx=0, pady=1)
-        # Colour dot
         tk.Label(frame, text="●", fg=colour,
                  bg="#16213e", font=("Arial", 9),
                  padx=6).pack(side="left")
-        # Option number badge
         tk.Label(frame, text=f"{opt_num:>3}",
                  bg="#16213e", fg="#555",
                  font=("Arial", 9, "bold"),
                  width=3).pack(side="left")
-        # Label
         tk.Label(frame, text=label,
                  bg="#16213e", fg="#888888",
                  font=("Arial", 10), width=22, anchor="w").pack(side="left")
-        # Value
         tk.Label(frame, text=value,
                  bg="#16213e", fg=colour,
                  font=("Arial", 10), anchor="w").pack(side="left", padx=(0, 10))
+
+    # ── Export Tab ────────────────────────────────────────────
+    def build_export_tab(self):
+        header_frame = tk.Frame(self.export_tab, bg="#1a1a2e")
+        header_frame.pack(fill="x", padx=10, pady=(10, 5))
+
+        self.export_status = tk.Label(header_frame,
+                                      text="No data in session yet",
+                                      bg="#1a1a2e", fg="#888888")
+        self.export_status.pack(side="left")
+
+        clear_btn = tk.Button(header_frame, text="Clear Session",
+                              command=self.clear_session,
+                              bg="#16213e", fg="#ff4757",
+                              font=("Arial", 9),
+                              padx=10,
+                              relief="flat",
+                              highlightthickness=0,
+                              borderwidth=0)
+        clear_btn.pack(side="right")
+
+        tree_frame = tk.Frame(self.export_tab, bg="#1a1a2e")
+        tree_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
+
+        self.export_tree = ttk.Treeview(tree_frame,
+                                         columns=("time", "type", "summary"),
+                                         show="headings",
+                                         selectmode="browse")
+        self.export_tree.heading("time",    text="Timestamp")
+        self.export_tree.heading("type",    text="Type")
+        self.export_tree.heading("summary", text="Summary")
+        self.export_tree.column("time",    width=140)
+        self.export_tree.column("type",    width=90)
+        self.export_tree.column("summary", width=230)
+
+        exp_scrollbar = ttk.Scrollbar(tree_frame, orient="vertical",
+                                       command=self.export_tree.yview)
+        self.export_tree.configure(yscrollcommand=exp_scrollbar.set)
+        self.export_tree.pack(side="left", fill="both", expand=True)
+        exp_scrollbar.pack(side="right", fill="y")
+
+        btn_frame = tk.Frame(self.export_tab, bg="#1a1a2e")
+        btn_frame.pack(fill="x", padx=10, pady=(0, 10))
+
+        self.export_xlsx_btn = tk.Button(btn_frame, text="Export XLS",
+                                          command=self.do_export_xlsx,
+                                          bg="#00d4ff", fg="#1a1a2e",
+                                          font=("Arial", 11, "bold"),
+                                          padx=20,
+                                          relief="flat",
+                                          highlightthickness=0,
+                                          borderwidth=0,
+                                          state="disabled")
+        self.export_xlsx_btn.pack(side="left", padx=(0, 5))
+
+        self.export_result_label = tk.Label(btn_frame, text="",
+                                             bg="#1a1a2e", fg="#00ff88",
+                                             font=("Arial", 9))
+        self.export_result_label.pack(side="left", padx=10)
+
+    def _refresh_export_tab(self):
+        for row in self.export_tree.get_children():
+            self.export_tree.delete(row)
+
+        for entry in self.session.port_scans:
+            summary = f"{entry['switch']} — {entry['port']} ({entry['protocol']})"
+            self.export_tree.insert("", "end",
+                                     values=(entry["timestamp"], "Port Scan", summary))
+
+        for entry in self.session.ip_snapshots:
+            summary = (f"{entry['ip']} via {entry['dhcp_server']}"
+                       if entry["dhcp_enabled"] else f"{entry['ip']} (static)")
+            self.export_tree.insert("", "end",
+                                     values=(entry["timestamp"], "IP Snapshot", summary))
+
+        for entry in self.session.mdns_scans:
+            count = len(entry["devices"])
+            summary = f"{count} device{'s' if count != 1 else ''} discovered"
+            self.export_tree.insert("", "end",
+                                     values=(entry["timestamp"], "mDNS Scan", summary))
+
+        total = self.session.total_entries()
+        if total == 0:
+            self.export_status.config(text="No data in session yet", fg="#888888")
+            self.export_xlsx_btn.config(state="disabled")
+            self.export_csv_btn.config(state="disabled")
+        else:
+            parts = []
+            if self.session.port_scans:
+                n = len(self.session.port_scans)
+                parts.append(f"{n} port scan{'s' if n != 1 else ''}")
+            if self.session.ip_snapshots:
+                n = len(self.session.ip_snapshots)
+                parts.append(f"{n} IP snapshot{'s' if n != 1 else ''}")
+            if self.session.mdns_scans:
+                n = len(self.session.mdns_scans)
+                parts.append(f"{n} mDNS scan{'s' if n != 1 else ''}")
+            self.export_status.config(
+                text="Session: " + ", ".join(parts),
+                fg="#00d4ff"
+            )
+            self.export_xlsx_btn.config(state="normal")
+
+    def do_export_xlsx(self):
+        if not self.session.has_data():
+            return
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".xlsx",
+            filetypes=[("Excel files", "*.xlsx")],
+            initialfile=f"pint_session_{timestamp}.xlsx",
+            title="Export session to XLS"
+        )
+        if not filepath:
+            return
+        try:
+            export_xlsx(self.session, filepath)
+            self.export_result_label.config(
+                text=f"✅ Saved {os.path.basename(filepath)}", fg="#00ff88"
+            )
+        except Exception as e:
+            self.export_result_label.config(text=f"❌ Export failed: {e}", fg="#ff4757")
+
+    def clear_session(self):
+        import tkinter.messagebox as mb
+        if not self.session.has_data():
+            return
+        if mb.askyesno("Clear Session",
+                        "This will remove all accumulated scan results.\n\nAre you sure?"):
+            self.session.clear()
+            self.export_result_label.config(text="")
 
 
 # ── Npcap installer (Windows only) ───────────────────────────
