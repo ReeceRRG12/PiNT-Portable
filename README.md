@@ -45,11 +45,12 @@ No Python required. Just download and run.
 
 ```
 PiNT-Portable/
-├── pint.py          # Main application & GUI
-├── scanner.py       # Packet capture logic
-├── lldp_parser.py   # LLDP protocol parser
-├── cdp_parser.py    # CDP protocol parser
-└── logo.png         # Application logo
+├── pint.py           # Main application & GUI
+├── scanner.py        # Packet capture logic (LLDP/CDP)
+├── mdns_scanner.py   # mDNS discovery & IP resolution
+├── lldp_parser.py    # LLDP protocol parser
+├── cdp_parser.py     # CDP protocol parser
+└── logo.png          # Application logo
 ```
 
 ---
