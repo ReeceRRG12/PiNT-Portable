@@ -12,7 +12,7 @@ class PiNTApp:
     def __init__(self, root):
         self.root = root
         self.root.title("PiNT - Network Tool")
-        self.root.geometry("500x480")
+        self.root.geometry("500x520")
         self.root.configure(bg="#1a1a2e")
 
         try:
@@ -37,6 +37,15 @@ class PiNTApp:
                         bg="#1a1a2e", fg="#00d4ff")
         title.pack(pady=5)
 
+        about_btn = tk.Button(root, text="About",
+                              command=self.show_about,
+                              bg="#1a1a2e", fg="#888888",
+                              font=("Arial", 8),
+                              relief="flat",
+                              highlightthickness=0,
+                              borderwidth=0)
+        about_btn.pack()
+
         style = ttk.Style()
         style.theme_use("default")
         style.configure("TNotebook", background="#1a1a2e", borderwidth=0)
@@ -59,6 +68,19 @@ class PiNTApp:
         self.build_mdns_tab()
 
         self.device_data = {}
+
+    def show_about(self):
+        import tkinter.messagebox as mb
+        mb.showinfo("About PiNT",
+            "🖧 PiNT - Port Identifier Network Tool\n"
+            "Version: v0.3.2\n\n"
+            "A lightweight tool for field technicians to identify\n"
+            "switch ports and discover mDNS devices on a network.\n\n"
+            "Built by Reece Rainer\n\n"
+            "📧 reece@pinetworktools.com\n"
+            "🔗 github.com/ReeceRRG12/PiNT-Portable\n\n"
+            "Fully Open Source - Built with ❤️ for the networking community"
+        )
 
     # ── Port ID Tab ──────────────────────────────────────────
     def build_port_tab(self):
