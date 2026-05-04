@@ -1,30 +1,62 @@
-import re
+import struct
 
 def parse_lldp(pkt):
     raw = bytes(pkt)
-    device = {}
-    device["protocol"] = "LLDP"
+    device = {"protocol": "LLDP"}
 
-    match = re.search(b'\x0a.([\x20-\x7e]+)', raw)
-    if match:
-        device["name"] = match.group(1).decode("utf-8", errors="ignore")
+    pos = 14  # skip Ethernet header
 
-    match = re.search(b'gigabitEthernet\\s[\\d/]+', raw, re.IGNORECASE)
-    if match:
-        device["port"] = match.group(0).decode("utf-8", errors="ignore")
+    port_from_type2 = None  # fallback
+    port_from_type4 = None  # preferred
 
-    match = re.search(b'\x0c.([\x20-\x7e]{10,})', raw)
-    if match:
-        device["description"] = match.group(1).decode("utf-8", errors="ignore")
+    while pos + 2 <= len(raw):
+        header = struct.unpack_from("!H", raw, pos)[0]
+        tlv_type = (header >> 9) & 0x7F
+        tlv_len  = header & 0x1FF
+        pos += 2
 
-    match = re.search(b'\x10\x0c\x05\x01(....)', raw)
-    if match:
-        ip_bytes = match.group(1)
-        device["ip"] = f"{ip_bytes[0]}.{ip_bytes[1]}.{ip_bytes[2]}.{ip_bytes[3]}"
+        if tlv_type == 0:
+            break
+        if pos + tlv_len > len(raw):
+            break
 
-    match = re.search(b'\xfe\x12\x00\x80\xc2\x03\x00\x01.(..)', raw)
-    if match:
-        vlan_bytes = match.group(1)
-        device["vlan"] = (vlan_bytes[0] << 8) + vlan_bytes[1]
+        value = raw[pos: pos + tlv_len]
+        pos += tlv_len
+
+        if tlv_type == 2:  # Port ID
+            subtype = value[0] if value else 0
+            port_str = value[1:].decode("utf-8", errors="ignore").strip()
+            # Only use if subtype is ifname (5) or locally-assigned (7)
+            # Ignore subtype 3 (MAC address) and subtype 4 (network address)
+            if subtype in (5, 7) and port_str:
+                port_from_type2 = port_str
+
+        elif tlv_type == 4:  # Port Description — always preferred
+            port_from_type4 = value.decode("utf-8", errors="ignore").strip()
+
+        elif tlv_type == 5:  # System Name
+            device["name"] = value.decode("utf-8", errors="ignore").strip()
+
+        elif tlv_type == 6:  # System Description
+            raw_desc = value.decode("utf-8", errors="ignore").strip()
+            # Trim kernel strings — take only the first line
+            device["description"] = raw_desc.splitlines()[0][:80]
+
+        elif tlv_type == 8:  # Management Address
+            if len(value) >= 6 and value[1] == 1:  # subtype 1 = IPv4
+                ip_bytes = value[2:6]
+                device["ip"] = f"{ip_bytes[0]}.{ip_bytes[1]}.{ip_bytes[2]}.{ip_bytes[3]}"
+
+        elif tlv_type == 127:  # Organizationally Specific
+            if len(value) < 4:
+                continue
+            oui     = value[0:3]
+            subtype = value[3]
+            # IEEE 802.1 OUI = 00:80:c2, subtype 1 = Port VLAN ID
+            if oui == b'\x00\x80\xc2' and subtype == 0x01 and len(value) >= 6:
+                device["vlan"] = struct.unpack_from("!H", value, 4)[0]
+
+    # Port: prefer type 4 (description), fall back to type 2 (ID)
+    device["port"] = port_from_type4 or port_from_type2 or "Unknown"
 
     return device
