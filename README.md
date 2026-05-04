@@ -1,5 +1,5 @@
 # 🍺 PiNT - Port Identifier Network Tool
-![Version](https://img.shields.io/badge/version-v0.5.2-blue)
+![Version](https://img.shields.io/badge/version-v0.5.3-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS-green)
 
