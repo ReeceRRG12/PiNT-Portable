@@ -64,16 +64,21 @@ PiNT-Portable/
 
 | Version | Description |
 |---------|-------------|
-| v0.1 | Initial release — LLDP support |
-| v0.2 | Added CDP support, refactored codebase |
-| v0.3 | mDNS / Bonjour browser tab |
-| v0.3.1 | CSV export, IP resolve button, Simple/Full view toggle |
-| v0.3.2 | Windows mDNS service discovery fix, About dialog |
-| v0.4 | Extended IP & DHCP information tab |
-| v0.5 | Session-scoped export to XLS |
-| v0.5.1 | Improved About dialog with clickable links |
-| v0.6 | Planned — Quick launch SSH / Telnet / HTTP(S) from management IP |
-| v0.7 | Planned — macOS support |
+| v0.1    | Initial release — LLDP support |
+| v0.2    | Added CDP support, refactored codebase |
+| v0.3    | mDNS / Bonjour browser tab |
+| v0.3.1  | CSV export, IP resolve button, Simple/Full view toggle |
+| v0.3.2  | Windows mDNS service discovery fix, About dialog |
+| v0.4    | Extended IP & DHCP information tab |
+| v0.5    | Session-scoped export to XLS |
+| **v0.5.1**  | **Current** — Improved About dialog with clickable links |
+| v0.5.2  | Planned — LLDP parser fixes for Ruckus and UniFi devices |
+| v0.5.3  | Planned — Report template fixes |
+| v0.5.4  | Planned — UI update — descriptions added for each tab |
+| v0.5.5  | Planned — Code refactor — each UI tab split into its own .py file |
+| v0.6    | Planned — Quick launch SSH / Telnet / HTTP(S) from management IP |
+| v0.7    | Planned — Integrated iPerf3 tester |
+| v0.8    | Planned — macOS support |
 
 ---
 
@@ -97,8 +102,13 @@ PiNT-Portable/
 - [x] **v0.4** — Extended IP & DHCP tab with colour-coded scope options
 - [x] **v0.5** — Session-scoped XLS export with Port Scans, IP Snapshots and mDNS sheets
 - [x] **v0.5.1** — Improved About dialog with clickable email and GitHub links
+- [ ] **v0.5.2** — LLDP parser fixes for Ruckus and UniFi devices
+- [ ] **v0.5.3** — Report template fixes
+- [ ] **v0.5.4** — UI update with descriptions for each tab
+- [ ] **v0.5.5** — Code refactor — each UI tab split into its own .py file for easier collaboration
 - [ ] **v0.6** — Quick launch buttons (SSH / Telnet / HTTP / HTTPS) next to management IP
-- [ ] **v0.7** — macOS support
+- [ ] **v0.7** — Integrated iPerf3 tester — run throughput, jitter and packet loss tests from within PiNT
+- [ ] **v0.8** — macOS support
 
 ---
 
