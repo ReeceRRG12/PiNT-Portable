@@ -59,11 +59,24 @@ def _apply_data_row(ws, row_num, values, colours=None):
         cell.border    = _border()
     ws.row_dimensions[row_num].height = 18
 
-def _set_col_widths(ws, widths):
-    for col, width in enumerate(widths, start=1):
-        ws.column_dimensions[
-            ws.cell(row=1, column=col).column_letter
-        ].width = width
+def _autofit_columns(ws, min_width=10, max_width=60, padding=2):
+    """
+    Iterate every column in the sheet and set its width to the longest
+    cell value found, clamped between min_width and max_width.
+    padding adds a small breathing gap so text isn't flush with the border.
+    """
+    for col_cells in ws.columns:
+        col_letter = col_cells[0].column_letter
+        max_len = 0
+        for cell in col_cells:
+            if cell.value is not None:
+                # Handle multi-line values — use the longest line
+                lines = str(cell.value).split("\n")
+                cell_len = max(len(line) for line in lines)
+                if cell_len > max_len:
+                    max_len = cell_len
+        width = min(max(max_len + padding, min_width), max_width)
+        ws.column_dimensions[col_letter].width = width
 
 def _freeze(ws, cell="A2"):
     ws.freeze_panes = cell
@@ -83,10 +96,8 @@ def _build_port_sheet(wb, port_scans):
 
     headers = ["Timestamp", "Protocol", "Switch", "Port",
                "Model / Description", "Management IP", "VLAN"]
-    widths  = [20, 10, 28, 18, 35, 18, 10]
 
     _apply_header_row(ws, 1, headers)
-    _set_col_widths(ws, widths)
     _freeze(ws)
 
     for i, entry in enumerate(port_scans, start=2):
@@ -111,21 +122,20 @@ def _build_port_sheet(wb, port_scans):
         cell.font = _font(C_HEADER_FG, bold=True)
         cell.fill = _fill(C_SECTION_BG)
 
+    _autofit_columns(ws)
+
 
 def _build_ip_sheet(wb, ip_snapshots):
     ws = wb.create_sheet("IP Snapshots")
     ws.sheet_view.showGridLines = False
     _tab_colour(ws, "00FF88")
 
-    # ── Top section: summary per snapshot ──
     summary_headers = ["Timestamp", "Adapter", "Hostname", "MAC",
                         "IP Address", "Subnet", "Gateway",
                         "DNS Servers", "Domain", "DHCP Enabled",
                         "DHCP Server", "Lease Obtained", "Lease Expires"]
-    widths = [20, 20, 24, 20, 16, 16, 16, 28, 18, 14, 16, 24, 24]
 
     _apply_header_row(ws, 1, summary_headers)
-    _set_col_widths(ws, widths)
     _freeze(ws)
 
     for i, snap in enumerate(ip_snapshots, start=2):
@@ -150,6 +160,7 @@ def _build_ip_sheet(wb, ip_snapshots):
 
     # ── DHCP options section below ──
     if not ip_snapshots:
+        _autofit_columns(ws)
         return
 
     current_row = len(ip_snapshots) + 4
@@ -163,11 +174,6 @@ def _build_ip_sheet(wb, ip_snapshots):
 
     opt_headers = ["Snapshot #", "Option #", "Option Name", "Value", "Flag"]
     _apply_header_row(ws, current_row, opt_headers)
-    ws.column_dimensions["A"].width = 12
-    ws.column_dimensions["B"].width = 10
-    ws.column_dimensions["C"].width = 28
-    ws.column_dimensions["D"].width = 35
-    ws.column_dimensions["E"].width = 12
     current_row += 1
 
     for snap_num, snap in enumerate(ip_snapshots, start=1):
@@ -178,6 +184,8 @@ def _build_ip_sheet(wb, ip_snapshots):
             _apply_data_row(ws, current_row, values, colours)
             current_row += 1
 
+    _autofit_columns(ws)
+
 
 def _build_mdns_sheet(wb, mdns_scans):
     ws = wb.create_sheet("mDNS Discoveries")
@@ -186,10 +194,8 @@ def _build_mdns_sheet(wb, mdns_scans):
 
     headers = ["Scan #", "Timestamp", "Device Name", "Service Type",
                "IP Address", "Raw String"]
-    widths  = [8, 20, 30, 28, 16, 50]
 
     _apply_header_row(ws, 1, headers)
-    _set_col_widths(ws, widths)
     _freeze(ws)
 
     row = 2
@@ -209,6 +215,8 @@ def _build_mdns_sheet(wb, mdns_scans):
     if row == 2:
         ws.cell(row=2, column=1, value="No mDNS data captured this session.").font = \
             _font(C_FG_AMBER)
+
+    _autofit_columns(ws)
 
 
 # ── Public API ────────────────────────────────────────────────────────────────

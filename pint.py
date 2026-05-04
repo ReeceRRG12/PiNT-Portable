@@ -15,7 +15,7 @@ class PiNTApp:
     def __init__(self, root):
         self.root = root
         self.root.title("PiNT - Network Tool")
-        self.root.geometry("500x520")
+        self.root.geometry("500x560")
         self.root.configure(bg="#1a1a2e")
 
         # ── Session manager ──────────────────────────────────
@@ -84,6 +84,14 @@ class PiNTApp:
 
         self.device_data = {}
 
+    def _tab_description(self, parent, text):
+        """Renders a muted description line at the top of a tab."""
+        tk.Label(parent, text=text,
+                 bg="#1a1a2e", fg="#555555",
+                 font=("Arial", 9, "italic"),
+                 wraplength=460, justify="left").pack(
+                     fill="x", padx=10, pady=(0, 4), anchor="w")
+
     def show_about(self):
         import webbrowser
         win = tk.Toplevel(self.root)
@@ -101,7 +109,7 @@ class PiNTApp:
                  bg="#1a1a2e", fg="#00d4ff",
                  font=("Arial", 13, "bold")).pack(pady=(20, 4))
 
-        tk.Label(win, text="Version v0.5.1",
+        tk.Label(win, text="Version v0.5.3",
                  bg="#1a1a2e", fg="#888888",
                  font=("Arial", 10)).pack()
 
@@ -148,10 +156,17 @@ class PiNTApp:
 
     # ── Port ID Tab ──────────────────────────────────────────
     def build_port_tab(self):
+        self._tab_description(
+            self.port_tab,
+            "Identifies which switch and port you are connected to by listening for "
+            "LLDP and CDP packets broadcast by managed switches. Useful when tracing "
+            "cables or auditing patch panels."
+        )
+
         self.status = tk.Label(self.port_tab,
                                text="Press Scan to detect your switch port",
                                bg="#1a1a2e", fg="#888888")
-        self.status.pack(pady=(10, 0))
+        self.status.pack(pady=(4, 0))
 
         self.result_frame = tk.Frame(self.port_tab, bg="#16213e", padx=20, pady=20)
         self.result_frame.pack(fill="both", expand=True, padx=20, pady=10)
@@ -210,7 +225,6 @@ class PiNTApp:
             self.device_data = device
             self.result.config(text=text, fg="#00ff88")
             self.status.config(text=f"✅ Switch detected via {protocol}!", fg=protocol_color)
-            # ── Log to session ──
             self.session.add_port_scan(device)
         else:
             self.result.config(
@@ -233,8 +247,15 @@ class PiNTApp:
 
     # ── mDNS Tab ─────────────────────────────────────────────
     def build_mdns_tab(self):
+        self._tab_description(
+            self.mdns_tab,
+            "Discovers devices on the local network that advertise services via mDNS "
+            "(Bonjour). Commonly used to find printers, cameras, smart devices, and "
+            "Apple services without needing access to the switch or DHCP server."
+        )
+
         top_frame = tk.Frame(self.mdns_tab, bg="#1a1a2e")
-        top_frame.pack(fill="x", padx=10, pady=(10, 5))
+        top_frame.pack(fill="x", padx=10, pady=(0, 5))
 
         self.mdns_status = tk.Label(top_frame,
                                     text="Press Scan to discover mDNS devices",
@@ -383,7 +404,6 @@ class PiNTApp:
         self.resolve_btn.config(state="normal")
         self.mdns_export_btn.config(state="normal")
         self.mdns_copy_btn.config(state="normal")
-        # ── Log to session ──
         if devices:
             self.session.add_mdns_scan(devices)
 
@@ -477,8 +497,15 @@ class PiNTApp:
 
     # ── IP Info Tab ───────────────────────────────────────────
     def build_ip_tab(self):
+        self._tab_description(
+            self.ip_tab,
+            "Displays the IP configuration of your network adapter, including DHCP "
+            "server details and scope options. Useful for understanding the network "
+            "segment you are connected to without needing switch or router access."
+        )
+
         top_frame = tk.Frame(self.ip_tab, bg="#1a1a2e")
-        top_frame.pack(fill="x", padx=10, pady=(10, 5))
+        top_frame.pack(fill="x", padx=10, pady=(0, 5))
 
         self.ip_status = tk.Label(top_frame,
                                   text="Press Scan to load IP & DHCP information",
@@ -602,7 +629,6 @@ class PiNTApp:
                      bg="#1a1a2e", fg="#888888",
                      font=("Arial", 10)).pack(padx=10, pady=4, anchor="w")
 
-        # ── Log to session ──
         self.session.add_ip_snapshot(ip_data, dhcp_opts)
 
         self.ip_status.config(text="✅ IP & DHCP information loaded", fg="#00ff88")
@@ -646,8 +672,15 @@ class PiNTApp:
 
     # ── Export Tab ────────────────────────────────────────────
     def build_export_tab(self):
+        self._tab_description(
+            self.export_tab,
+            "Accumulates results from all tabs during your session and exports them "
+            "to a formatted Excel file. Run scans across multiple ports to build up "
+            "a full picture before exporting — ideal for switch audits."
+        )
+
         header_frame = tk.Frame(self.export_tab, bg="#1a1a2e")
-        header_frame.pack(fill="x", padx=10, pady=(10, 5))
+        header_frame.pack(fill="x", padx=10, pady=(0, 5))
 
         self.export_status = tk.Label(header_frame,
                                       text="No data in session yet",
@@ -728,7 +761,6 @@ class PiNTApp:
         if total == 0:
             self.export_status.config(text="No data in session yet", fg="#888888")
             self.export_xlsx_btn.config(state="disabled")
-            self.export_csv_btn.config(state="disabled")
         else:
             parts = []
             if self.session.port_scans:
