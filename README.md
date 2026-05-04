@@ -73,10 +73,9 @@ PiNT-Portable/
 | v0.4    | Extended IP & DHCP tab |
 | v0.5    | Session-scoped export to XLS |
 | v0.5.1  | Improved About dialog with clickable links |
-| **v0.5.2**  | **Current** — Multi-vendor LLDP parser rework (Ruckus, UniFi, TP-Link) |
-| v0.5.3  | Planned — Report template fixes |
-| v0.5.4  | Planned — UI update — descriptions added for each tab |
-| v0.5.5  | Planned — Code refactor — each UI tab split into its own .py file |
+| v0.5.2  | Multi-vendor LLDP parser rework (Ruckus, UniFi, TP-Link) |
+| **v0.5.3**  | **Current** — XLS column auto-fit, tab descriptions |
+| v0.5.4  | Planned — Code refactor — each UI tab split into its own .py file |
 | v0.6    | Planned — Quick launch SSH / Telnet / HTTP(S) from management IP |
 | v0.7    | Planned — Integrated iPerf3 tester |
 | v0.8    | Planned — macOS support |
@@ -104,9 +103,8 @@ PiNT-Portable/
 - [x] **v0.5** — Session-scoped XLS export with Port Scans, IP Snapshots and mDNS sheets
 - [x] **v0.5.1** — Improved About dialog with clickable email and GitHub links
 - [x] **v0.5.2** — Multi-vendor LLDP parser rework — proper TLV parsing for Ruckus, UniFi, TP-Link and any IEEE 802.1AB compliant switch
-- [ ] **v0.5.3** — Report template fixes
-- [ ] **v0.5.4** — UI update with descriptions for each tab
-- [ ] **v0.5.5** — Code refactor — each UI tab split into its own .py file for easier collaboration
+- [x] **v0.5.3** — XLS column auto-fit, tab descriptions added for each tab
+- [ ] **v0.5.4** — Code refactor — each UI tab split into its own .py file for easier collaboration
 - [ ] **v0.6** — Quick launch buttons (SSH / Telnet / HTTP / HTTPS) next to management IP
 - [ ] **v0.7** — Integrated iPerf3 tester — run throughput, jitter and packet loss tests from within PiNT
 - [ ] **v0.8** — macOS support
