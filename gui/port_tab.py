@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 import threading
 import subprocess
 import webbrowser
@@ -30,9 +31,9 @@ class PortTab:
     """
 
     def __init__(self, parent, root, app_state):
-        self._root     = root
-        self._state    = app_state
-        self._device   = {}
+        self._root   = root
+        self._state  = app_state
+        self._device = {}
         self._build(parent)
 
     def _build(self, parent):
@@ -40,18 +41,27 @@ class PortTab:
                  text="Identifies which switch and port you are connected to by listening for "
                       "LLDP and CDP packets broadcast by managed switches. Useful when tracing "
                       "cables or auditing patch panels.",
-                 bg="#1a1a2e", fg="#555555",
-                 font=("Arial", 9, "italic"),
-                 wraplength=460, justify="left").pack(
-                     fill="x", padx=10, pady=(0, 4), anchor="w")
+                 bg="#1a1a2e", fg="#888888",
+                 font=("Arial", 10),
+                 wraplength=1050, justify="left").pack(
+                     fill="x", padx=10, pady=(8, 6), anchor="w")
 
         self.status = tk.Label(parent,
                                text="Press Scan to detect your switch port",
                                bg="#1a1a2e", fg="#888888")
-        self.status.pack(pady=(4, 0))
+        self.status.pack(pady=(4, 2))
+
+        style = ttk.Style()
+        style.configure("Scan.Horizontal.TProgressbar",
+                        troughcolor="#16213e", background="#00d4ff",
+                        bordercolor="#16213e", lightcolor="#00d4ff", darkcolor="#00d4ff",
+                        thickness=6)
+        self._progress = ttk.Progressbar(parent, mode="indeterminate",
+                                          style="Scan.Horizontal.TProgressbar")
+        self._progress.pack(fill="x", padx=20, pady=(0, 4))
 
         self.result_frame = tk.Frame(parent, bg="#16213e", padx=20, pady=20)
-        self.result_frame.pack(fill="both", expand=True, padx=20, pady=10)
+        self.result_frame.pack(fill="both", expand=True, padx=20, pady=(0, 10))
 
         self.result = tk.Label(self.result_frame, text="No data yet",
                                bg="#16213e", fg="#eee",
@@ -78,7 +88,7 @@ class PortTab:
                       relief="flat", highlightthickness=0, borderwidth=0,
                       cursor="hand2").pack(side="left", padx=3)
 
-        # ── Main action buttons (always visible) ──────────────────────────────
+        # ── Main action buttons ───────────────────────────────────────────────
         self._btn_frame = tk.Frame(parent, bg="#1a1a2e")
         self._btn_frame.pack(pady=5)
 
@@ -100,21 +110,28 @@ class PortTab:
     # ── Scan logic ────────────────────────────────────────────────────────────
 
     def start_scan(self):
+        timeout = self._state.settings.port_timeout
         self.scan_btn.config(state="disabled")
-        self.status.config(text="Scanning for LLDP and CDP... (up to 30s)", fg="#ffaa00")
+        self.status.config(
+            text=f"Scanning for LLDP and CDP... (up to {timeout}s)", fg="#ffaa00")
         self.result.config(text="Listening for switch...")
         self._device = {}
         self._ql_frame.pack_forget()
+        self._progress.start(10)
         threading.Thread(target=self._run_scan, daemon=True).start()
 
     def _run_scan(self):
         from scanner import scan
-        scan(self._handle_result, iface=self._state.selected_iface)
+        scan(self._handle_result,
+             timeout=self._state.settings.port_timeout,
+             iface=self._state.selected_iface)
 
     def _handle_result(self, device):
         self._root.after(0, self._update_ui, device)
 
     def _update_ui(self, device):
+        self._progress.stop()
+
         if device:
             protocol     = device.get('protocol', 'Unknown')
             proto_colour = "#00d4ff" if protocol == "LLDP" else "#ff9500"

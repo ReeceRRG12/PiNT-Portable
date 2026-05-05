@@ -68,7 +68,7 @@ def send_mdns_queries(queries):
         except Exception as e:
             print(f"Send error for {q}: {e}")
 
-def scan_mdns(callback, iface=None):
+def scan_mdns(callback, timeout=30, iface=None):
     devices = {}
     host_ip_map = {}
     srv_map = {}
@@ -106,7 +106,6 @@ def scan_mdns(callback, iface=None):
                 )
                 if rr.type == 1 and hasattr(rr, 'rdata'):
                     host_ip_map[rrname] = rr.rdata
-                    print(f"  [A] {rrname} -> {rr.rdata}")
                 elif rr.type == 33 and hasattr(rr, 'target'):
                     target = strip_local(
                         rr.target.decode("utf-8", errors="ignore")
@@ -162,7 +161,7 @@ def scan_mdns(callback, iface=None):
             print(f"mDNS parse error: {e}")
 
     sniff_kwargs = {"filter": "udp port 5353", "prn": handle_packet,
-                    "timeout": 30, "store": False}
+                    "timeout": timeout, "store": False}
     if iface:
         sniff_kwargs["iface"] = iface
     sniff(**sniff_kwargs)
@@ -230,7 +229,6 @@ def resolve_mdns_ips(current_devices, callback):
                 )
                 if rr.type == 1 and hasattr(rr, 'rdata'):
                     host_ip_map[rrname] = rr.rdata
-                    print(f"  [A] {rrname} -> {rr.rdata}")
                 elif rr.type == 33 and hasattr(rr, 'target'):
                     target = strip_local(
                         rr.target.decode("utf-8", errors="ignore")

@@ -18,10 +18,10 @@ class IpTab:
                  text="Displays the IP configuration of your network adapter, including DHCP "
                       "server details and scope options. Useful for understanding the network "
                       "segment you are connected to without needing switch or router access.",
-                 bg="#1a1a2e", fg="#555555",
-                 font=("Arial", 9, "italic"),
-                 wraplength=460, justify="left").pack(
-                     fill="x", padx=10, pady=(0, 4), anchor="w")
+                 bg="#1a1a2e", fg="#888888",
+                 font=("Arial", 10),
+                 wraplength=1050, justify="left").pack(
+                     fill="x", padx=10, pady=(8, 6), anchor="w")
 
         top = tk.Frame(parent, bg="#1a1a2e")
         top.pack(fill="x", padx=10, pady=(0, 5))

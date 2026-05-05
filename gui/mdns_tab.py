@@ -12,8 +12,8 @@ class MdnsTab:
     """
 
     def __init__(self, parent, root, app_state):
-        self._root  = root
-        self._state = app_state
+        self._root      = root
+        self._state     = app_state
         self._results   = []
         self._view_mode = "simple"
         self._build(parent)
@@ -23,14 +23,14 @@ class MdnsTab:
                  text="Discovers devices on the local network that advertise services via mDNS "
                       "(Bonjour). Commonly used to find printers, cameras, smart devices, and "
                       "Apple services without needing access to the switch or DHCP server.",
-                 bg="#1a1a2e", fg="#555555",
-                 font=("Arial", 9, "italic"),
-                 wraplength=460, justify="left").pack(
-                     fill="x", padx=10, pady=(0, 4), anchor="w")
+                 bg="#1a1a2e", fg="#888888",
+                 font=("Arial", 10),
+                 wraplength=1050, justify="left").pack(
+                     fill="x", padx=10, pady=(8, 6), anchor="w")
 
         # ── Top toolbar ───────────────────────────────────────────────────────
         top = tk.Frame(parent, bg="#1a1a2e")
-        top.pack(fill="x", padx=10, pady=(0, 5))
+        top.pack(fill="x", padx=10, pady=(0, 2))
 
         self.status = tk.Label(top, text="Press Scan to discover mDNS devices",
                                bg="#1a1a2e", fg="#888888")
@@ -61,6 +61,16 @@ class MdnsTab:
                                      state="disabled")
         self.resolve_btn.pack(side="right", padx=(0, 5))
 
+        # ── Progress bar ──────────────────────────────────────────────────────
+        style = ttk.Style()
+        style.configure("Scan.Horizontal.TProgressbar",
+                        troughcolor="#16213e", background="#00d4ff",
+                        bordercolor="#16213e", lightcolor="#00d4ff", darkcolor="#00d4ff",
+                        thickness=6)
+        self._progress = ttk.Progressbar(parent, mode="indeterminate",
+                                          style="Scan.Horizontal.TProgressbar")
+        self._progress.pack(fill="x", padx=10, pady=(0, 4))
+
         # ── Filter bar ────────────────────────────────────────────────────────
         search = tk.Frame(parent, bg="#1a1a2e")
         search.pack(fill="x", padx=10, pady=(0, 5))
@@ -79,15 +89,17 @@ class MdnsTab:
         tree_frame = tk.Frame(parent, bg="#1a1a2e")
         tree_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
 
-        style = ttk.Style()
         style.configure("Treeview",
-                         background="#16213e", foreground="#eee",
-                         fieldbackground="#16213e",
-                         rowheight=28, font=("Arial", 10))
+                        background="#16213e", foreground="#eee",
+                        fieldbackground="#16213e", bordercolor="#16213e",
+                        rowheight=28, font=("Arial", 10))
         style.configure("Treeview.Heading",
-                         background="#0f3460", foreground="#00d4ff",
-                         font=("Arial", 10, "bold"))
-        style.map("Treeview", background=[("selected", "#0f3460")])
+                        background="#0f3460", foreground="#00d4ff",
+                        bordercolor="#0f3460",
+                        font=("Arial", 10, "bold"))
+        style.map("Treeview",
+                  background=[("selected", "#0f3460")],
+                  foreground=[("selected", "#ffffff")])
 
         self._tree = ttk.Treeview(tree_frame,
                                    columns=("friendly", "type", "ip"),
@@ -135,25 +147,30 @@ class MdnsTab:
     # ── Scan ──────────────────────────────────────────────────────────────────
 
     def start_scan(self):
+        timeout = self._state.settings.mdns_timeout
         self.scan_btn.config(state="disabled")
         self.resolve_btn.config(state="disabled")
         self.export_btn.config(state="disabled")
         self.copy_btn.config(state="disabled")
-        self.status.config(text="Scanning for mDNS devices... (30s)", fg="#ffaa00")
+        self.status.config(text=f"Scanning for mDNS devices... ({timeout}s)", fg="#ffaa00")
         for row in self._tree.get_children():
             self._tree.delete(row)
         self._results = []
         self._detail.config(text="")
+        self._progress.start(10)
         threading.Thread(target=self._run_scan, daemon=True).start()
 
     def _run_scan(self):
         from mdns_scanner import scan_mdns
-        scan_mdns(self._handle_result, iface=self._state.selected_iface)
+        scan_mdns(self._handle_result,
+                  timeout=self._state.settings.mdns_timeout,
+                  iface=self._state.selected_iface)
 
     def _handle_result(self, devices):
         self._root.after(0, self._update_ui, devices)
 
     def _update_ui(self, devices):
+        self._progress.stop()
         self._results = devices
         self._apply_filter()
         count = len(devices)
@@ -206,10 +223,7 @@ class MdnsTab:
         self.resolve_btn.config(state="disabled")
         self.scan_btn.config(state="disabled")
         self.status.config(text="Sending IP resolve request... (45s)", fg="#ffaa00")
-        threading.Thread(
-            target=lambda: self._run_resolve(),
-            daemon=True
-        ).start()
+        threading.Thread(target=self._run_resolve, daemon=True).start()
 
     def _run_resolve(self):
         from mdns_scanner import resolve_mdns_ips

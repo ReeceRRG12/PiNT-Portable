@@ -95,10 +95,10 @@ class MonitorTab:
                  text="Monitors your network interface for link speed, duplex negotiation "
                       "and packet drops. Useful as a basic cable test — drops or half-duplex "
                       "negotiation often indicate a cable or switch port problem.",
-                 bg="#1a1a2e", fg="#555555",
-                 font=("Arial", 9, "italic"),
-                 wraplength=460, justify="left").pack(
-                     fill="x", padx=10, pady=(0, 6), anchor="w")
+                 bg="#1a1a2e", fg="#888888",
+                 font=("Arial", 10),
+                 wraplength=1050, justify="left").pack(
+                     fill="x", padx=10, pady=(8, 6), anchor="w")
 
         # ── Link info panel ───────────────────────────────────────────────────
         link_frame = tk.Frame(parent, bg="#16213e")
@@ -211,8 +211,10 @@ class MonitorTab:
         self._start_btn.config(state="disabled")
         self._stop_btn.config(state="normal")
         self._reset_btn.config(state="normal")
-        self._status.config(text=f"Monitoring {self._psutil_iface} — updates every 2s",
-                            fg="#00d4ff")
+        poll_s = self._state.settings.monitor_poll_ms // 1000
+        self._status.config(
+            text=f"Monitoring {self._psutil_iface} — updates every {poll_s}s",
+            fg="#00d4ff")
         self._poll()
 
     def _stop(self):
@@ -268,8 +270,8 @@ class MonitorTab:
             ci, co, cei, ceo = current
             self._update_counter_display(ci - bi, co - bo, cei - ei, ceo - eo)
 
-        # Schedule next poll
-        self._after_id = self._root.after(self._POLL_MS, self._poll)
+        # Schedule next poll using current settings
+        self._after_id = self._root.after(self._state.settings.monitor_poll_ms, self._poll)
 
     def _update_counter_display(self, dropin, dropout, errin, errout):
         def _colour(n):

@@ -5,191 +5,286 @@ import sys
 
 from session import SessionManager
 from gui.interface_picker import InterfacePicker, get_iface_display
-from gui.port_tab    import PortTab
-from gui.mdns_tab    import MdnsTab
-from gui.ip_tab      import IpTab
-from gui.export_tab  import ExportTab
-from gui.monitor_tab import MonitorTab
+from gui.port_tab     import PortTab
+from gui.mdns_tab     import MdnsTab
+from gui.ip_tab       import IpTab
+from gui.export_tab   import ExportTab
+from gui.monitor_tab  import MonitorTab
+from gui.settings_tab import SettingsTab
+
+
+_BG      = "#1a1a2e"
+_SIDEBAR = "#16213e"
+_ACCENT  = "#00d4ff"
+_NAV_W   = 210
+
+
+class AppSettings:
+    def __init__(self):
+        self.port_timeout    = 30    # seconds
+        self.mdns_timeout    = 30    # seconds
+        self.monitor_poll_ms = 2000  # milliseconds
 
 
 class AppState:
-    """Lightweight container for state shared across all tabs."""
     def __init__(self, selected_iface, session):
-        self.selected_iface = selected_iface  # scapy interface name or None
+        self.selected_iface = selected_iface
         self.session        = session
+        self.settings       = AppSettings()
+
+
+def _base_path():
+    return (sys._MEIPASS if hasattr(sys, '_MEIPASS')
+            else os.path.dirname(os.path.abspath(__file__)))
+
+
+def _load_icon(filename, size=20):
+    try:
+        from PIL import Image, ImageTk
+        path = os.path.join(_base_path(), "icons", filename)
+        img = Image.open(path).convert("RGBA").resize((size, size), Image.LANCZOS)
+        return ImageTk.PhotoImage(img)
+    except Exception:
+        return None
 
 
 class PiNTApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("PiNT - Network Tool")
-        self.root.geometry("500x580")
-        self.root.configure(bg="#1a1a2e")
+        self.root.title("PiNT — Pi Network Tools")
+        self.root.geometry("1380x960")
+        self.root.configure(bg=_BG)
+        self.root.resizable(False, False)
 
-        self._build_logo()
-        self._build_title()
+        ttk.Style().theme_use("clam")
 
-        # ── Interface picker (shows as modal if multiple adapters detected) ───
-        picker = InterfacePicker(root)
-        session = SessionManager()
+        picker      = InterfacePicker(root)
+        session     = SessionManager()
         self._state = AppState(selected_iface=picker.result, session=session)
 
-        self._build_adapter_bar()
-        self._build_notebook()
+        self._icons = {
+            "port":     _load_icon("PortID.png"),
+            "mdns":     _load_icon("mDNS.png"),
+            "ip":       _load_icon("IP_Info.png"),
+            "monitor":  _load_icon("Monitor.png"),
+            "export":   _load_icon("Export.png"),
+            "settings": _load_icon("settings.png"),
+            "about":    _load_icon("About.png"),
+        }
 
-        # Wire session changes → export tab refresh
+        self._nav_buttons  = {}
+        self._active_panel = None
+        self._panels       = {}
+
+        self._build_sidebar()
+        self._build_content()
+
         self._state.session.register_listener(
             lambda: root.after(0, self._export_tab.refresh))
 
-    # ── Header ────────────────────────────────────────────────────────────────
+        self._navigate("port")
 
-    def _build_logo(self):
+    # ── Sidebar ───────────────────────────────────────────────────────────────
+
+    def _build_sidebar(self):
+        sidebar = tk.Frame(self.root, bg=_SIDEBAR, width=_NAV_W)
+        sidebar.pack(side="left", fill="y")
+        sidebar.pack_propagate(False)
+
+        self._build_sidebar_header(sidebar)
+        tk.Frame(sidebar, bg="#0f3460", height=1).pack(fill="x", padx=12, pady=(4, 8))
+
+        for key, icon_key, label in [
+            ("port",    "port",    "Port ID"),
+            ("mdns",    "mdns",    "mDNS"),
+            ("ip",      "ip",      "IP Info"),
+            ("monitor", "monitor", "Monitor"),
+            ("export",  "export",  "Export"),
+        ]:
+            self._nav_btn(sidebar, key, self._icons[icon_key], label)
+
+        # Push Settings / About to bottom
+        tk.Frame(sidebar, bg=_SIDEBAR).pack(fill="both", expand=True)
+        tk.Frame(sidebar, bg="#0f3460", height=1).pack(fill="x", padx=12, pady=6)
+        self._nav_btn(sidebar, "settings", self._icons["settings"], "Settings")
+        self._nav_btn(sidebar, "about",    self._icons["about"],    "About")
+
+        tk.Frame(sidebar, bg="#0f3460", height=1).pack(fill="x", padx=12, pady=(6, 2))
+        self._build_adapter_bar(sidebar)
+
+    def _build_sidebar_header(self, parent):
+        frame = tk.Frame(parent, bg=_SIDEBAR)
+        frame.pack(fill="x")
+
         try:
             from PIL import Image, ImageTk
-            base = sys._MEIPASS if hasattr(sys, '_MEIPASS') else os.path.dirname(
-                os.path.abspath(__file__))
-            img = Image.open(os.path.join(base, "logo.png")).resize((80, 80))
-            logo_img = ImageTk.PhotoImage(img)
-            lbl = tk.Label(self.root, image=logo_img, bg="#1a1a2e")
-            lbl.image = logo_img
-            lbl.pack(pady=5)
-            self.root.iconphoto(True, logo_img)
-        except Exception as e:
-            print(f"Logo error: {e}")
 
-    def _build_title(self):
-        tk.Label(self.root, text="PiNT - Network Tool",
-                 font=("Arial", 16, "bold"),
-                 bg="#1a1a2e", fg="#00d4ff").pack(pady=5)
+            # In-app logo: fill sidebar width, preserve aspect ratio
+            app_logo = Image.open(os.path.join(_base_path(), "PiNT_InAppLogo.png"))
+            w = _NAV_W
+            h = int(app_logo.height * (w / app_logo.width))
+            app_logo = app_logo.resize((w, h), Image.LANCZOS)
+            self._app_logo_img = ImageTk.PhotoImage(app_logo)
+            lbl = tk.Label(frame, image=self._app_logo_img, bg=_SIDEBAR)
+            lbl.image = self._app_logo_img
+            lbl.pack()
 
-        tk.Button(self.root, text="About",
-                  command=self._show_about,
-                  bg="#1a1a2e", fg="#888888",
-                  font=("Arial", 8),
-                  relief="flat", highlightthickness=0, borderwidth=0).pack()
+            # Taskbar / window icon: keep the original logo.png
+            icon = Image.open(os.path.join(_base_path(), "logo.png")).resize(
+                (32, 32), Image.LANCZOS)
+            self._taskbar_icon = ImageTk.PhotoImage(icon)
+            self.root.iconphoto(True, self._taskbar_icon)
+        except Exception:
+            tk.Label(frame, text="Pi Network\nTools",
+                     bg=_SIDEBAR, fg=_ACCENT,
+                     font=("Arial", 10, "bold"),
+                     justify="center").pack(pady=14)
 
-    def _build_adapter_bar(self):
-        """Small bar showing the selected adapter with a Change button."""
-        bar = tk.Frame(self.root, bg="#1a1a2e")
-        bar.pack(fill="x", padx=14, pady=(2, 0))
+    def _build_adapter_bar(self, parent):
+        frame = tk.Frame(parent, bg=_SIDEBAR)
+        frame.pack(fill="x", padx=8, pady=(0, 10))
 
-        tk.Label(bar, text="Adapter:",
-                 bg="#1a1a2e", fg="#555555",
-                 font=("Arial", 8)).pack(side="left")
+        tk.Label(frame, text="Adapter",
+                 bg=_SIDEBAR, fg="#666666",
+                 font=("Arial", 9, "bold")).pack(anchor="w")
 
         self._iface_label = tk.Label(
-            bar,
+            frame,
             text=get_iface_display(self._state.selected_iface),
-            bg="#1a1a2e", fg="#888888",
-            font=("Arial", 8))
-        self._iface_label.pack(side="left", padx=(4, 8))
+            bg=_SIDEBAR, fg="#888888",
+            font=("Arial", 9),
+            wraplength=190, justify="left")
+        self._iface_label.pack(anchor="w")
 
-        tk.Button(bar, text="Change",
+        tk.Button(frame, text="Change adapter",
                   command=self._change_interface,
-                  bg="#1a1a2e", fg="#00d4ff",
-                  font=("Arial", 8, "underline"),
+                  bg=_SIDEBAR, fg=_ACCENT,
+                  font=("Arial", 9, "underline"),
                   relief="flat", highlightthickness=0, borderwidth=0,
-                  cursor="hand2").pack(side="left")
+                  cursor="hand2").pack(anchor="w", pady=(2, 0))
+
+    def _nav_btn(self, parent, key, icon_img, label):
+        btn = tk.Button(
+            parent,
+            text=f"  {label}",
+            image=icon_img,
+            compound="left" if icon_img else "none",
+            anchor="w",
+            bg=_SIDEBAR, fg="#888888",
+            activebackground="#1f2d45", activeforeground=_ACCENT,
+            font=("Arial", 10),
+            relief="flat", highlightthickness=0, borderwidth=0,
+            padx=8, pady=9,
+            cursor="hand2",
+            command=lambda k=key: self._navigate(k),
+        )
+        btn.pack(fill="x")
+
+        def _enter(b=btn, k=key):
+            if k != self._active_panel:
+                b.config(fg="#cccccc")
+
+        def _leave(b=btn, k=key):
+            if k != self._active_panel:
+                b.config(fg="#888888")
+
+        btn.bind("<Enter>", lambda _: _enter())
+        btn.bind("<Leave>", lambda _: _leave())
+        self._nav_buttons[key] = btn
+
+    # ── Content area ──────────────────────────────────────────────────────────
+
+    def _build_content(self):
+        content = tk.Frame(self.root, bg=_BG)
+        content.pack(side="left", fill="both", expand=True)
+
+        def _panel(key):
+            f = tk.Frame(content, bg=_BG)
+            f.place(relwidth=1, relheight=1)
+            self._panels[key] = f
+            return f
+
+        PortTab(_panel("port"), self.root, self._state)
+        MdnsTab(_panel("mdns"), self.root, self._state)
+        IpTab(_panel("ip"), self.root, self._state)
+        MonitorTab(_panel("monitor"), self.root, self._state)
+        self._export_tab = ExportTab(_panel("export"), self.root, self._state)
+        SettingsTab(_panel("settings"), self.root, self._state)
+        self._build_about_panel(_panel("about"))
+
+    def _build_about_panel(self, parent):
+        import webbrowser
+
+        frame = tk.Frame(parent, bg=_BG)
+        frame.place(relx=0.5, rely=0.46, anchor="center")
+
+        try:
+            from PIL import Image, ImageTk
+            about_logo = Image.open(os.path.join(_base_path(), "PiNT_InAppLogo.png"))
+            w = 200
+            h = int(about_logo.height * (w / about_logo.width))
+            about_logo = about_logo.resize((w, h), Image.LANCZOS)
+            about_img = ImageTk.PhotoImage(about_logo)
+            lbl = tk.Label(frame, image=about_img, bg=_BG)
+            lbl.image = about_img
+            lbl.pack(pady=(0, 8))
+        except Exception:
+            pass
+
+        tk.Label(frame, text="PiNT — Port Identifier Network Tool",
+                 bg=_BG, fg=_ACCENT,
+                 font=("Arial", 13, "bold")).pack()
+
+        tk.Label(frame, text="Version v1.0",
+                 bg=_BG, fg="#888888",
+                 font=("Arial", 10)).pack(pady=(2, 0))
+
+        tk.Frame(frame, bg="#0f3460", height=1).pack(fill="x", padx=20, pady=12)
+
+        tk.Label(frame,
+                 text="A lightweight tool for field technicians to identify\n"
+                      "switch ports and discover mDNS devices on a network.",
+                 bg=_BG, fg="#eeeeee",
+                 font=("Arial", 10), justify="center").pack()
+
+        tk.Frame(frame, bg="#0f3460", height=1).pack(fill="x", padx=20, pady=12)
+
+        tk.Label(frame, text="Built by Reece Rainer",
+                 bg=_BG, fg="#888888",
+                 font=("Arial", 10)).pack()
+
+        for text, url in [
+            ("reece@pinetworktools.com",           "mailto:reece@pinetworktools.com"),
+            ("github.com/ReeceRRG12/PiNT-Portable", "https://github.com/ReeceRRG12/PiNT-Portable"),
+        ]:
+            lbl = tk.Label(frame, text=text,
+                           bg=_BG, fg=_ACCENT,
+                           font=("Arial", 10, "underline"),
+                           cursor="hand2")
+            lbl.pack(pady=2)
+            lbl.bind("<Button-1>", lambda _, u=url: webbrowser.open(u))
+
+        tk.Label(frame,
+                 text="Fully Open Source — Built with ❤️ for the networking community",
+                 bg=_BG, fg="#555555",
+                 font=("Arial", 9)).pack(pady=(12, 0))
+
+    # ── Navigation ────────────────────────────────────────────────────────────
+
+    def _navigate(self, key):
+        for k, btn in self._nav_buttons.items():
+            if k == key:
+                btn.config(fg=_ACCENT, bg="#1f2d45")
+            else:
+                btn.config(fg="#888888", bg=_SIDEBAR)
+        self._active_panel = key
+        self._panels[key].tkraise()
 
     def _change_interface(self):
         picker = InterfacePicker(self.root, force=True)
         if picker.result is not None:
             self._state.selected_iface = picker.result
         self._iface_label.config(text=get_iface_display(self._state.selected_iface))
-
-    # ── Notebook ──────────────────────────────────────────────────────────────
-
-    def _build_notebook(self):
-        style = ttk.Style()
-        style.theme_use("default")
-        style.configure("TNotebook", background="#1a1a2e", borderwidth=0)
-        style.configure("TNotebook.Tab",
-                        background="#16213e", foreground="#888888",
-                        padding=[12, 4], font=("Arial", 10))
-        style.map("TNotebook.Tab",
-                  background=[("selected", "#1a1a2e")],
-                  foreground=[("selected", "#00d4ff")])
-
-        nb = ttk.Notebook(self.root)
-        nb.pack(fill="both", expand=True, padx=10, pady=5)
-
-        def _frame():
-            f = tk.Frame(nb, bg="#1a1a2e")
-            return f
-
-        port_frame = _frame(); nb.add(port_frame, text="  Port ID  ")
-        PortTab(port_frame, self.root, self._state)
-
-        mdns_frame = _frame(); nb.add(mdns_frame, text="  mDNS  ")
-        MdnsTab(mdns_frame, self.root, self._state)
-
-        ip_frame = _frame(); nb.add(ip_frame, text="  IP Info  ")
-        IpTab(ip_frame, self.root, self._state)
-
-        monitor_frame = _frame(); nb.add(monitor_frame, text="  Monitor  ")
-        MonitorTab(monitor_frame, self.root, self._state)
-
-        export_frame = _frame(); nb.add(export_frame, text="  Export  ")
-        self._export_tab = ExportTab(export_frame, self.root, self._state)
-
-    # ── About dialog ──────────────────────────────────────────────────────────
-
-    def _show_about(self):
-        import webbrowser
-        win = tk.Toplevel(self.root)
-        win.title("About PiNT")
-        win.configure(bg="#1a1a2e")
-        win.resizable(False, False)
-        win.grab_set()
-
-        win.update_idletasks()
-        x = self.root.winfo_x() + (self.root.winfo_width()  // 2) - 200
-        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - 160
-        win.geometry(f"400x320+{x}+{y}")
-
-        tk.Label(win, text="🖧 PiNT - Port Identifier Network Tool",
-                 bg="#1a1a2e", fg="#00d4ff",
-                 font=("Arial", 13, "bold")).pack(pady=(20, 4))
-
-        tk.Label(win, text="Version v0.7",
-                 bg="#1a1a2e", fg="#888888",
-                 font=("Arial", 10)).pack()
-
-        tk.Frame(win, bg="#0f3460", height=1).pack(fill="x", padx=30, pady=14)
-
-        tk.Label(win,
-                 text="A lightweight tool for field technicians to identify\n"
-                      "switch ports and discover mDNS devices on a network.",
-                 bg="#1a1a2e", fg="#eee",
-                 font=("Arial", 10), justify="center").pack(padx=20)
-
-        tk.Frame(win, bg="#0f3460", height=1).pack(fill="x", padx=30, pady=14)
-
-        tk.Label(win, text="Built by Reece Rainer",
-                 bg="#1a1a2e", fg="#888888",
-                 font=("Arial", 10)).pack()
-
-        def _link(text, url):
-            lbl = tk.Label(win, text=text,
-                           bg="#1a1a2e", fg="#00d4ff",
-                           font=("Arial", 10, "underline"),
-                           cursor="hand2")
-            lbl.pack(pady=2)
-            lbl.bind("<Button-1>", lambda _: webbrowser.open(url))
-
-        _link("📧 reece@pinetworktools.com", "mailto:reece@pinetworktools.com")
-        _link("🔗 github.com/ReeceRRG12/PiNT-Portable",
-              "https://github.com/ReeceRRG12/PiNT-Portable")
-
-        tk.Label(win, text="Fully Open Source — Built with ❤️ for the networking community",
-                 bg="#1a1a2e", fg="#555",
-                 font=("Arial", 9), justify="center").pack(pady=(10, 0))
-
-        tk.Button(win, text="Close",
-                  command=win.destroy,
-                  bg="#16213e", fg="#eee",
-                  font=("Arial", 10), padx=20,
-                  relief="flat", highlightthickness=0, borderwidth=0).pack(pady=16)
 
 
 # ── Npcap check (Windows) ─────────────────────────────────────────────────────

@@ -20,10 +20,10 @@ class ExportTab:
                  text="Accumulates results from all tabs during your session and exports them "
                       "to a formatted Excel file. Run scans across multiple ports to build up "
                       "a full picture before exporting — ideal for switch audits.",
-                 bg="#1a1a2e", fg="#555555",
-                 font=("Arial", 9, "italic"),
-                 wraplength=460, justify="left").pack(
-                     fill="x", padx=10, pady=(0, 4), anchor="w")
+                 bg="#1a1a2e", fg="#888888",
+                 font=("Arial", 10),
+                 wraplength=1050, justify="left").pack(
+                     fill="x", padx=10, pady=(8, 6), anchor="w")
 
         header = tk.Frame(parent, bg="#1a1a2e")
         header.pack(fill="x", padx=10, pady=(0, 5))
@@ -41,6 +41,19 @@ class ExportTab:
         # ── Session tree ──────────────────────────────────────────────────────
         tree_frame = tk.Frame(parent, bg="#1a1a2e")
         tree_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
+
+        style = ttk.Style()
+        style.configure("Treeview",
+                        background="#16213e", foreground="#eee",
+                        fieldbackground="#16213e", bordercolor="#16213e",
+                        rowheight=28, font=("Arial", 10))
+        style.configure("Treeview.Heading",
+                        background="#0f3460", foreground="#00d4ff",
+                        bordercolor="#0f3460",
+                        font=("Arial", 10, "bold"))
+        style.map("Treeview",
+                  background=[("selected", "#0f3460")],
+                  foreground=[("selected", "#ffffff")])
 
         self._tree = ttk.Treeview(tree_frame,
                                    columns=("time", "type", "summary"),

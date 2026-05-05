@@ -5,7 +5,7 @@ a = Analysis(
     ['pint.py'],
     pathex=[],
     binaries=[],
-    datas=[('logo.png', '.'), ('gui', 'gui')],
+    datas=[('logo.png', '.'), ('PiNT_InAppLogo.png', '.'), ('gui', 'gui'), ('icons', 'icons')],
     hiddenimports=[
         'gui',
         'gui.interface_picker',
@@ -14,6 +14,7 @@ a = Analysis(
         'gui.ip_tab',
         'gui.export_tab',
         'gui.monitor_tab',
+        'gui.settings_tab',
         'psutil',
     ],
     hookspath=[],
