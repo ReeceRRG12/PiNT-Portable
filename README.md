@@ -1,5 +1,5 @@
 # 🍺 PiNT - Port Identifier Network Tool
-![Version](https://img.shields.io/badge/version-v0.6-blue)
+![Version](https://img.shields.io/badge/version-v0.7-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS-green)
 
@@ -15,6 +15,7 @@ A lightweight portable Windows tool that identifies which switch port your machi
 - **Displays switch name, port, model, IP and VLAN**
 - **Network adapter picker** — detects all interfaces on launch, lets you choose the right one with a recommended highlight; remembers selection for the session
 - **Quick Launch buttons** — once a management IP is found, one-click SSH and Telnet via PuTTY, or open HTTP/HTTPS in your browser
+- **Port Monitor tab** — displays negotiated link speed and duplex; tracks dropped and errored packets since monitoring started for basic cable-test feedback
 - **mDNS / Bonjour browser** — discovers devices broadcasting on the local network
 - **Simple / Full view toggle** — clean view for quick reference, full view for Bonjour gateway config
 - **Active IP resolution** — sends mDNS queries to resolve device IPs
@@ -85,8 +86,8 @@ PiNT-Portable/
 | v0.5.1  | Improved About dialog with clickable links |
 | v0.5.2  | Multi-vendor LLDP parser rework (Ruckus, UniFi, TP-Link) |
 | v0.5.3  | XLS column auto-fit, tab descriptions |
-| **v0.6**| **Current** — GUI refactored into gui/ package; network adapter picker; quick launch SSH/Telnet/HTTP/HTTPS |
-| v0.7    | Planned — Port monitoring: link speed/duplex negotiation, dropped packet counter (cable test) |
+| v0.6    | GUI refactored into gui/ package; network adapter picker; quick launch SSH/Telnet/HTTP/HTTPS |
+| **v0.7**| **Current** — Port Monitor tab: link speed/duplex, dropped packet counter; EXE publisher metadata; Change adapter button fix |
 | v0.8    | Planned — Integrated iPerf3 tester |
 | v0.9    | Planned — macOS support |
 
@@ -115,7 +116,7 @@ PiNT-Portable/
 - [x] **v0.5.2** — Multi-vendor LLDP parser rework — proper TLV parsing for Ruckus, UniFi, TP-Link and any IEEE 802.1AB compliant switch
 - [x] **v0.5.3** — XLS column auto-fit, tab descriptions added for each tab
 - [x] **v0.6** — GUI refactored into `gui/` package (one file per tab); network adapter picker on launch with recommended highlighting; quick launch buttons for SSH/Telnet (PuTTY) and HTTP/HTTPS once a management IP is detected
-- [ ] **v0.7** — Port monitoring: display negotiated link speed and duplex; monitor for dropped/errored packets — provides basic cable-test feedback without extra hardware
+- [x] **v0.7** — Port Monitor tab: negotiated link speed and duplex, live dropped/errored packet counter (basic cable-test feedback); EXE publisher metadata (Pi Network Tools); Change adapter button now always shows the picker
 - [ ] **v0.8** — Integrated iPerf3 tester — run throughput, jitter and packet loss tests from within PiNT
 - [ ] **v0.9** — macOS support
 

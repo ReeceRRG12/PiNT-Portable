@@ -5,10 +5,11 @@ import sys
 
 from session import SessionManager
 from gui.interface_picker import InterfacePicker, get_iface_display
-from gui.port_tab   import PortTab
-from gui.mdns_tab   import MdnsTab
-from gui.ip_tab     import IpTab
-from gui.export_tab import ExportTab
+from gui.port_tab    import PortTab
+from gui.mdns_tab    import MdnsTab
+from gui.ip_tab      import IpTab
+from gui.export_tab  import ExportTab
+from gui.monitor_tab import MonitorTab
 
 
 class AppState:
@@ -91,7 +92,7 @@ class PiNTApp:
                   cursor="hand2").pack(side="left")
 
     def _change_interface(self):
-        picker = InterfacePicker(self.root)
+        picker = InterfacePicker(self.root, force=True)
         if picker.result is not None:
             self._state.selected_iface = picker.result
         self._iface_label.config(text=get_iface_display(self._state.selected_iface))
@@ -125,6 +126,9 @@ class PiNTApp:
         ip_frame = _frame(); nb.add(ip_frame, text="  IP Info  ")
         IpTab(ip_frame, self.root, self._state)
 
+        monitor_frame = _frame(); nb.add(monitor_frame, text="  Monitor  ")
+        MonitorTab(monitor_frame, self.root, self._state)
+
         export_frame = _frame(); nb.add(export_frame, text="  Export  ")
         self._export_tab = ExportTab(export_frame, self.root, self._state)
 
@@ -147,7 +151,7 @@ class PiNTApp:
                  bg="#1a1a2e", fg="#00d4ff",
                  font=("Arial", 13, "bold")).pack(pady=(20, 4))
 
-        tk.Label(win, text="Version v0.6",
+        tk.Label(win, text="Version v0.7",
                  bg="#1a1a2e", fg="#888888",
                  font=("Arial", 10)).pack()
 

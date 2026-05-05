@@ -71,27 +71,31 @@ class InterfacePicker:
 
     After instantiation check self.result for the chosen scapy interface
     name (str) or None if the user dismissed or only one option existed.
+
+    Pass force=True to always show the dialog (used when the user clicks
+    the Change button rather than on first launch).
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent, force=False):
         self.result = None
         self._interfaces = _enumerate_interfaces()
 
         if not self._interfaces:
             return  # nothing usable — let scapy auto-detect
 
-        # One usable interface: silently auto-select it
-        if len(self._interfaces) == 1:
-            self.result = self._interfaces[0]['name']
-            return
+        if not force:
+            # One usable interface: silently auto-select it
+            if len(self._interfaces) == 1:
+                self.result = self._interfaces[0]['name']
+                return
 
-        # One clearly recommended interface amid virtual/wireless: auto-select
-        recommended = [i for i in self._interfaces if i['recommended']]
-        if len(recommended) == 1:
-            self.result = recommended[0]['name']
-            return
+            # One clearly recommended interface amid virtual/wireless: auto-select
+            recommended = [i for i in self._interfaces if i['recommended']]
+            if len(recommended) == 1:
+                self.result = recommended[0]['name']
+                return
 
-        # Multiple plausible interfaces: let the user choose
+        # Multiple plausible interfaces (or forced by user): show the dialog
         self._build(parent)
 
     def _build(self, parent):

@@ -13,6 +13,8 @@ a = Analysis(
         'gui.mdns_tab',
         'gui.ip_tab',
         'gui.export_tab',
+        'gui.monitor_tab',
+        'psutil',
     ],
     hookspath=[],
     hooksconfig={},
@@ -43,4 +45,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=['logo.png'],
+    version='version_info.txt',
 )
