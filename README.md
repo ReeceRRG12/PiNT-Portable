@@ -99,6 +99,7 @@ PiNT-Portable/
 | v0.6    | GUI refactored into gui/ package; network adapter picker; quick launch SSH/Telnet/HTTP/HTTPS |
 | v0.7    | Port Monitor tab: link speed/duplex, dropped packet counter; EXE publisher metadata; Change adapter button fix |
 | **v1.0**| **Current** — Full GUI overhaul: sidebar navigation, branded in-app logo, progress bars on scans, Settings panel, About panel, larger window |
+| v1.1    | Scalable window — resizable UI with adaptive fonts and layout for low-resolution display support |
 | Future  | Integrated iPerf3 tester |
 | Future  | macOS support |
 
@@ -129,6 +130,7 @@ PiNT-Portable/
 - [x] **v0.6** — GUI refactored into `gui/` package (one file per tab); network adapter picker on launch with recommended highlighting; quick launch buttons for SSH/Telnet (PuTTY) and HTTP/HTTPS once a management IP is detected
 - [x] **v0.7** — Port Monitor tab: negotiated link speed and duplex, live dropped/errored packet counter (basic cable-test feedback); EXE publisher metadata (Pi Network Tools); Change adapter button now always shows the picker
 - [x] **v1.0** — Full GUI overhaul: sidebar navigation replaces tab bar; branded in-app logo with aspect-ratio scaling; animated progress bars on Port ID and mDNS scans; Settings panel for scan timeouts and monitor poll interval; About panel inline; larger 1380×960 window
+- [ ] **v1.1** — Scalable window: resizable UI that adapts fonts, icons and layout to the window size — better support for lower resolution displays
 - [ ] **Future** — Integrated iPerf3 tester
 - [ ] **Future** — macOS support
 
