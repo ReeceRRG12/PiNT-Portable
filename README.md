@@ -88,7 +88,7 @@ PiNT-Portable/
 | v0.5.3  | XLS column auto-fit, tab descriptions |
 | v0.6    | GUI refactored into gui/ package; network adapter picker; quick launch SSH/Telnet/HTTP/HTTPS |
 | **v0.7**| **Current** — Port Monitor tab: link speed/duplex, dropped packet counter; EXE publisher metadata; Change adapter button fix |
-| v0.8    | Planned — Integrated iPerf3 tester |
+| Future  | Integrated iPerf3 tester |
 | Future  | macOS support |
 
 ---
@@ -117,7 +117,7 @@ PiNT-Portable/
 - [x] **v0.5.3** — XLS column auto-fit, tab descriptions added for each tab
 - [x] **v0.6** — GUI refactored into `gui/` package (one file per tab); network adapter picker on launch with recommended highlighting; quick launch buttons for SSH/Telnet (PuTTY) and HTTP/HTTPS once a management IP is detected
 - [x] **v0.7** — Port Monitor tab: negotiated link speed and duplex, live dropped/errored packet counter (basic cable-test feedback); EXE publisher metadata (Pi Network Tools); Change adapter button now always shows the picker
-- [ ] **v0.8** — Integrated iPerf3 tester — run throughput, jitter and packet loss tests from within PiNT
+- [ ] **Future** — Integrated iPerf3 tester
 - [ ] **Future** — macOS support
 
 ---
