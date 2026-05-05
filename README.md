@@ -60,14 +60,25 @@ PiNT-Portable/
 ├── ip_info.py            # IP & DHCP information gathering
 ├── session.py            # Session state manager
 ├── exporter.py           # XLS export logic
-├── logo.png              # Application logo
+├── logo.png              # Taskbar / window icon
+├── PiNT_InAppLogo.png    # Branded in-app sidebar logo
+├── icons/                # Sidebar navigation icons (PNG, 24x24)
+│   ├── PortID.png
+│   ├── mDNS.png
+│   ├── IP_Info.png
+│   ├── Monitor.png
+│   ├── Export.png
+│   ├── settings.png
+│   └── About.png
 └── gui/
     ├── __init__.py
     ├── interface_picker.py   # Network adapter selection dialog
     ├── port_tab.py           # Port ID tab (LLDP/CDP + quick launch)
     ├── mdns_tab.py           # mDNS browser tab
     ├── ip_tab.py             # IP Info & DHCP tab
-    └── export_tab.py         # Session export tab
+    ├── monitor_tab.py        # Port Monitor tab (link speed, packet drops)
+    ├── export_tab.py         # Session export tab
+    └── settings_tab.py       # Settings panel
 ```
 
 ---
