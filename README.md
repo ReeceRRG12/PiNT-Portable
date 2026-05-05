@@ -26,7 +26,6 @@ A lightweight portable Windows tool that identifies which switch port your machi
 - **Copy to clipboard** — paste results directly into Teams or email
 - **Auto-installs Npcap** if not already present
 - **Single .exe** — no install required, just run it
-- **Dark theme GUI** with PiNT branding
 
 ---
 
