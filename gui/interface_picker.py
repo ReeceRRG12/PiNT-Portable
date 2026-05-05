@@ -105,7 +105,7 @@ class InterfacePicker:
         win.resizable(False, False)
         win.grab_set()
 
-        w, h = 640, 370
+        w, h = 640, 440
         parent.update_idletasks()
         px = parent.winfo_x() + max(0, (parent.winfo_width()  // 2) - w // 2)
         py = parent.winfo_y() + max(0, (parent.winfo_height() // 2) - h // 2)
