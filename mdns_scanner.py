@@ -68,7 +68,7 @@ def send_mdns_queries(queries):
         except Exception as e:
             print(f"Send error for {q}: {e}")
 
-def scan_mdns(callback):
+def scan_mdns(callback, iface=None):
     devices = {}
     host_ip_map = {}
     srv_map = {}
@@ -161,14 +161,11 @@ def scan_mdns(callback):
         except Exception as e:
             print(f"mDNS parse error: {e}")
 
-    sniff(filter="udp port 5353", prn=handle_packet, timeout=30, store=False)
-
-    print("=== host_ip_map ===")
-    for k, v in host_ip_map.items():
-        print(f"  '{k}' -> {v}")
-    print("=== srv_map ===")
-    for k, v in srv_map.items():
-        print(f"  '{k}' -> {v}")
+    sniff_kwargs = {"filter": "udp port 5353", "prn": handle_packet,
+                    "timeout": 30, "store": False}
+    if iface:
+        sniff_kwargs["iface"] = iface
+    sniff(**sniff_kwargs)
 
     _resolve_ips(devices, host_ip_map, srv_map)
     callback(list(devices.values()))
@@ -257,11 +254,9 @@ def resolve_mdns_ips(current_devices, callback):
         except Exception as e:
             print(f"Resolve parse error: {e}")
 
-    sniff(filter="udp port 5353", prn=handle_packet, timeout=45, store=False)
-
-    print("=== resolve host_ip_map ===")
-    for k, v in host_ip_map.items():
-        print(f"  '{k}' -> {v}")
+    sniff_kwargs = {"filter": "udp port 5353", "prn": handle_packet,
+                    "timeout": 45, "store": False}
+    sniff(**sniff_kwargs)
 
     updated = [dict(d) for d in current_devices]
     for d in updated:

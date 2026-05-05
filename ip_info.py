@@ -147,16 +147,17 @@ def _find_active_iface():
     return conf.iface
 
 
-def get_dhcp_options(timeout=10):
+def get_dhcp_options(timeout=10, iface=None):
     """
     Send a DHCP INFORM packet and sniff the ACK to get full scope options.
     Returns a list of (option_number, label, value, flag) tuples.
     Falls back to an empty list if nothing is captured.
+    Pass iface (scapy interface name) to bind to a specific adapter.
     """
     options = []
 
     try:
-        iface = _find_active_iface()
+        iface = iface or _find_active_iface()
         my_ip  = get_if_addr(iface)
         my_mac = get_if_hwaddr(iface)
 

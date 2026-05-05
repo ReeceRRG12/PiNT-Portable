@@ -1,5 +1,5 @@
 # 🍺 PiNT - Port Identifier Network Tool
-![Version](https://img.shields.io/badge/version-v0.5.3-blue)
+![Version](https://img.shields.io/badge/version-v0.6-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS-green)
 
@@ -13,6 +13,8 @@ A lightweight portable Windows tool that identifies which switch port your machi
 - **Auto protocol detection** — works with Cisco (CDP) and all other vendors (LLDP)
 - **Multi-vendor LLDP support** — tested with TP-Link, Ruckus, UniFi and more
 - **Displays switch name, port, model, IP and VLAN**
+- **Network adapter picker** — detects all interfaces on launch, lets you choose the right one with a recommended highlight; remembers selection for the session
+- **Quick Launch buttons** — once a management IP is found, one-click SSH and Telnet via PuTTY, or open HTTP/HTTPS in your browser
 - **mDNS / Bonjour browser** — discovers devices broadcasting on the local network
 - **Simple / Full view toggle** — clean view for quick reference, full view for Bonjour gateway config
 - **Active IP resolution** — sends mDNS queries to resolve device IPs
@@ -41,6 +43,7 @@ No Python required. Just download and run.
 - Admin rights (required for packet capture)
 - Npcap (auto-installed on first run)
 - A wired ethernet connection to a managed switch
+- PuTTY (optional — required for SSH/Telnet quick launch buttons)
 
 ---
 
@@ -48,15 +51,22 @@ No Python required. Just download and run.
 
 ```
 PiNT-Portable/
-├── pint.py           # Main application & GUI
-├── scanner.py        # Packet capture logic (LLDP/CDP)
-├── mdns_scanner.py   # mDNS discovery & IP resolution
-├── lldp_parser.py    # LLDP protocol parser
-├── cdp_parser.py     # CDP protocol parser
-├── ip_info.py        # IP & DHCP information gathering
-├── session.py        # Session state manager
-├── exporter.py       # XLS export logic
-└── logo.png          # Application logo
+├── pint.py               # Main application entry point & orchestrator
+├── scanner.py            # Packet capture logic (LLDP/CDP)
+├── mdns_scanner.py       # mDNS discovery & IP resolution
+├── lldp_parser.py        # LLDP protocol parser
+├── cdp_parser.py         # CDP protocol parser
+├── ip_info.py            # IP & DHCP information gathering
+├── session.py            # Session state manager
+├── exporter.py           # XLS export logic
+├── logo.png              # Application logo
+└── gui/
+    ├── __init__.py
+    ├── interface_picker.py   # Network adapter selection dialog
+    ├── port_tab.py           # Port ID tab (LLDP/CDP + quick launch)
+    ├── mdns_tab.py           # mDNS browser tab
+    ├── ip_tab.py             # IP Info & DHCP tab
+    └── export_tab.py         # Session export tab
 ```
 
 ---
@@ -74,11 +84,11 @@ PiNT-Portable/
 | v0.5    | Session-scoped export to XLS |
 | v0.5.1  | Improved About dialog with clickable links |
 | v0.5.2  | Multi-vendor LLDP parser rework (Ruckus, UniFi, TP-Link) |
-| **v0.5.3**  | **Current** — XLS column auto-fit, tab descriptions |
-| v0.5.4  | Planned — Code refactor — each UI tab split into its own .py file |
-| v0.6    | Planned — Quick launch SSH / Telnet / HTTP(S) from management IP |
-| v0.7    | Planned — Integrated iPerf3 tester |
-| v0.8    | Planned — macOS support |
+| v0.5.3  | XLS column auto-fit, tab descriptions |
+| **v0.6**| **Current** — GUI refactored into gui/ package; network adapter picker; quick launch SSH/Telnet/HTTP/HTTPS |
+| v0.7    | Planned — Port monitoring: link speed/duplex negotiation, dropped packet counter (cable test) |
+| v0.8    | Planned — Integrated iPerf3 tester |
+| v0.9    | Planned — macOS support |
 
 ---
 
@@ -104,10 +114,10 @@ PiNT-Portable/
 - [x] **v0.5.1** — Improved About dialog with clickable email and GitHub links
 - [x] **v0.5.2** — Multi-vendor LLDP parser rework — proper TLV parsing for Ruckus, UniFi, TP-Link and any IEEE 802.1AB compliant switch
 - [x] **v0.5.3** — XLS column auto-fit, tab descriptions added for each tab
-- [ ] **v0.5.4** — Code refactor — each UI tab split into its own .py file for easier collaboration
-- [ ] **v0.6** — Quick launch buttons (SSH / Telnet / HTTP / HTTPS) next to management IP
-- [ ] **v0.7** — Integrated iPerf3 tester — run throughput, jitter and packet loss tests from within PiNT
-- [ ] **v0.8** — macOS support
+- [x] **v0.6** — GUI refactored into `gui/` package (one file per tab); network adapter picker on launch with recommended highlighting; quick launch buttons for SSH/Telnet (PuTTY) and HTTP/HTTPS once a management IP is detected
+- [ ] **v0.7** — Port monitoring: display negotiated link speed and duplex; monitor for dropped/errored packets — provides basic cable-test feedback without extra hardware
+- [ ] **v0.8** — Integrated iPerf3 tester — run throughput, jitter and packet loss tests from within PiNT
+- [ ] **v0.9** — macOS support
 
 ---
 

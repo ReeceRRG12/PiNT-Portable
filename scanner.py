@@ -3,7 +3,7 @@ from scapy.all import sniff
 from lldp_parser import parse_lldp
 from cdp_parser import parse_cdp
 
-def scan(callback, timeout=30):
+def scan(callback, timeout=30, iface=None):
     result = {}
     stop_event = threading.Event()
 
@@ -23,27 +23,33 @@ def scan(callback, timeout=30):
                 result.update(device)
                 callback(result)
 
+    sniff_kwargs_lldp = {
+        "filter": "ether proto 0x88cc",
+        "prn": lldp_handler,
+        "store": 0,
+        "timeout": timeout,
+    }
+    sniff_kwargs_cdp = {
+        "filter": "ether dst 01:00:0c:cc:cc:cc",
+        "prn": cdp_handler,
+        "store": 0,
+        "timeout": timeout,
+    }
+    if iface:
+        sniff_kwargs_lldp["iface"] = iface
+        sniff_kwargs_cdp["iface"]  = iface
+
     # Start LLDP listener thread
     lldp_thread = threading.Thread(
         target=sniff,
-        kwargs={
-            "filter": "ether proto 0x88cc",
-            "prn": lldp_handler,
-            "store": 0,
-            "timeout": timeout
-        },
+        kwargs=sniff_kwargs_lldp,
         daemon=True
     )
 
     # Start CDP listener thread
     cdp_thread = threading.Thread(
         target=sniff,
-        kwargs={
-            "filter": "ether dst 01:00:0c:cc:cc:cc",
-            "prn": cdp_handler,
-            "store": 0,
-            "timeout": timeout
-        },
+        kwargs=sniff_kwargs_cdp,
         daemon=True
     )
 
