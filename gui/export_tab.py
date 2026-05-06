@@ -3,6 +3,9 @@ from tkinter import ttk, filedialog
 import os
 from datetime import datetime
 
+import customtkinter as ctk
+from gui import theme
+
 
 class ExportTab:
     """
@@ -16,48 +19,44 @@ class ExportTab:
         self._build(parent)
 
     def _build(self, parent):
-        tk.Label(parent,
-                 text="Accumulates results from all tabs during your session and exports them "
-                      "to a formatted Excel file. Run scans across multiple ports to build up "
-                      "a full picture before exporting — ideal for switch audits.",
-                 bg="#1a1a2e", fg="#888888",
-                 font=("Arial", 10),
-                 wraplength=1050, justify="left").pack(
-                     fill="x", padx=10, pady=(8, 6), anchor="w")
+        _desc = tk.Label(parent,
+                         text="Accumulates results from all tabs during your session and exports them "
+                              "to a formatted Excel file.\n\n"
+                              "Run scans across multiple ports to build up a full picture before "
+                              "exporting — ideal for switch audits.",
+                         bg=theme.BG, fg=theme.FG_DIM,
+                         font=theme.tk_font(12),
+                         wraplength=600, justify="center")
+        _desc.pack(fill="x", padx=20, pady=(12, 8))
+        parent.bind("<Configure>", lambda e: _desc.configure(wraplength=max(100, e.width - 40)), add="+")
 
-        header = tk.Frame(parent, bg="#1a1a2e")
+        header = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
         header.pack(fill="x", padx=10, pady=(0, 5))
 
-        self._status = tk.Label(header, text="No data in session yet",
-                                bg="#1a1a2e", fg="#888888")
+        self._status = ctk.CTkLabel(header, text="No data in session yet",
+                                    fg_color="transparent", text_color=theme.FG_DIM,
+                                    font=theme.font(10))
         self._status.pack(side="left")
 
-        tk.Button(header, text="Clear Session",
-                  command=self._clear_session,
-                  bg="#16213e", fg="#ff4757",
-                  font=("Arial", 9), padx=10,
-                  relief="flat", highlightthickness=0, borderwidth=0).pack(side="right")
+        ctk.CTkButton(header, text="Clear Session",
+                      command=self._clear_session,
+                      fg_color=theme.PANEL, text_color=theme.ERROR,
+                      hover_color="#1f2d45",
+                      font=theme.font(9),
+                      corner_radius=6, border_width=0,
+                      width=110).pack(side="right")
 
         # ── Session tree ──────────────────────────────────────────────────────
-        tree_frame = tk.Frame(parent, bg="#1a1a2e")
+        tree_frame = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
         tree_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
 
         style = ttk.Style()
-        style.configure("Treeview",
-                        background="#16213e", foreground="#eee",
-                        fieldbackground="#16213e", bordercolor="#16213e",
-                        rowheight=28, font=("Arial", 10))
-        style.configure("Treeview.Heading",
-                        background="#0f3460", foreground="#00d4ff",
-                        bordercolor="#0f3460",
-                        font=("Arial", 10, "bold"))
-        style.map("Treeview",
-                  background=[("selected", "#0f3460")],
-                  foreground=[("selected", "#ffffff")])
+        theme.apply_treeview_style(style)
 
         self._tree = ttk.Treeview(tree_frame,
                                    columns=("time", "type", "summary"),
                                    show="headings",
+                                   style="PiNT.Treeview",
                                    selectmode="browse")
         self._tree.heading("time",    text="Timestamp")
         self._tree.heading("type",    text="Type")
@@ -72,21 +71,22 @@ class ExportTab:
         sb.pack(side="right", fill="y")
 
         # ── Export buttons ────────────────────────────────────────────────────
-        btn_frame = tk.Frame(parent, bg="#1a1a2e")
+        btn_frame = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
         btn_frame.pack(fill="x", padx=10, pady=(0, 10))
 
-        self._export_btn = tk.Button(btn_frame, text="Export XLS",
-                                      command=self._do_export,
-                                      bg="#00d4ff", fg="#1a1a2e",
-                                      font=("Arial", 11, "bold"),
-                                      padx=20, relief="flat",
-                                      highlightthickness=0, borderwidth=0,
-                                      state="disabled")
+        self._export_btn = ctk.CTkButton(btn_frame, text="Export XLS",
+                                          command=self._do_export,
+                                          fg_color=theme.ACCENT, text_color=theme.BG,
+                                          hover_color="#00b8d9",
+                                          font=theme.font(11, "bold"),
+                                          corner_radius=6, border_width=0,
+                                          width=120, state="disabled")
         self._export_btn.pack(side="left", padx=(0, 5))
 
-        self._result_label = tk.Label(btn_frame, text="",
-                                       bg="#1a1a2e", fg="#00ff88",
-                                       font=("Arial", 9))
+        self._result_label = ctk.CTkLabel(btn_frame, text="",
+                                           fg_color="transparent",
+                                           text_color=theme.SUCCESS,
+                                           font=theme.font(9))
         self._result_label.pack(side="left", padx=10)
 
     # ── Refresh (called by session listener) ──────────────────────────────────
@@ -115,8 +115,8 @@ class ExportTab:
 
         total = session.total_entries()
         if total == 0:
-            self._status.config(text="No data in session yet", fg="#888888")
-            self._export_btn.config(state="disabled")
+            self._status.configure(text="No data in session yet", text_color=theme.FG_DIM)
+            self._export_btn.configure(state="disabled")
         else:
             parts = []
             if session.port_scans:
@@ -128,8 +128,9 @@ class ExportTab:
             if session.mdns_scans:
                 n = len(session.mdns_scans)
                 parts.append(f"{n} mDNS scan{'s' if n != 1 else ''}")
-            self._status.config(text="Session: " + ", ".join(parts), fg="#00d4ff")
-            self._export_btn.config(state="normal")
+            self._status.configure(
+                text="Session: " + ", ".join(parts), text_color=theme.ACCENT)
+            self._export_btn.configure(state="normal")
 
     # ── Export / clear ────────────────────────────────────────────────────────
 
@@ -149,10 +150,12 @@ class ExportTab:
         try:
             from exporter import export_xlsx
             export_xlsx(session, filepath)
-            self._result_label.config(
-                text=f"✅ Saved {os.path.basename(filepath)}", fg="#00ff88")
+            self._result_label.configure(
+                text=f"✅ Saved {os.path.basename(filepath)}",
+                text_color=theme.SUCCESS)
         except Exception as e:
-            self._result_label.config(text=f"❌ Export failed: {e}", fg="#ff4757")
+            self._result_label.configure(
+                text=f"❌ Export failed: {e}", text_color=theme.ERROR)
 
     def _clear_session(self):
         import tkinter.messagebox as mb
@@ -162,4 +165,4 @@ class ExportTab:
         if mb.askyesno("Clear Session",
                         "This will remove all accumulated scan results.\n\nAre you sure?"):
             session.clear()
-            self._result_label.config(text="")
+            self._result_label.configure(text="")

@@ -1,11 +1,20 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from PyInstaller.utils.hooks import collect_data_files
+
+ctk_datas = collect_data_files('customtkinter')
 
 a = Analysis(
     ['pint.py'],
     pathex=[],
     binaries=[],
-    datas=[('logo.png', '.'), ('PiNT_InAppLogo.png', '.'), ('gui', 'gui'), ('icons', 'icons')],
+    datas=[
+        ('logo.png',           '.'),
+        ('PiNT_InAppLogo.png', '.'),
+        ('gui',                'gui'),
+        ('icons',              'icons'),
+        *ctk_datas,
+    ],
     hiddenimports=[
         'gui',
         'gui.interface_picker',
@@ -15,6 +24,13 @@ a = Analysis(
         'gui.export_tab',
         'gui.monitor_tab',
         'gui.settings_tab',
+        'gui.scale_manager',
+        'gui.theme',
+        'customtkinter',
+        'darkdetect',
+        'packaging',
+        'PIL',
+        'PIL._tkinter_finder',
         'psutil',
     ],
     hookspath=[],

@@ -2,6 +2,9 @@ import tkinter as tk
 from tkinter import ttk
 import threading
 
+import customtkinter as ctk
+from gui import theme
+
 
 def _find_psutil_iface(selected_scapy_iface):
     """
@@ -77,61 +80,65 @@ class MonitorTab:
     or a mis-configured switch port.
     """
 
-    _POLL_MS = 2000  # refresh interval in milliseconds
+    _POLL_MS = 2000
 
     def __init__(self, parent, root, app_state):
-        self._root      = root
-        self._state     = app_state
-        self._psutil_iface = None   # resolved on each monitor start
-        self._baseline  = None      # (dropin, dropout, errin, errout) at start
-        self._running   = False
-        self._after_id  = None
+        self._root         = root
+        self._state        = app_state
+        self._psutil_iface = None
+        self._baseline     = None
+        self._running      = False
+        self._after_id     = None
         self._build(parent)
 
     # ── Build UI ──────────────────────────────────────────────────────────────
 
     def _build(self, parent):
-        tk.Label(parent,
-                 text="Monitors your network interface for link speed, duplex negotiation "
-                      "and packet drops. Useful as a basic cable test — drops or half-duplex "
-                      "negotiation often indicate a cable or switch port problem.",
-                 bg="#1a1a2e", fg="#888888",
-                 font=("Arial", 10),
-                 wraplength=1050, justify="left").pack(
-                     fill="x", padx=10, pady=(8, 6), anchor="w")
+        _desc = tk.Label(parent,
+                         text="Monitors your network interface for link speed, duplex negotiation "
+                              "and packet drops.\n\n"
+                              "Useful as a basic cable test — drops or half-duplex negotiation "
+                              "often indicate a cable or switch port problem.",
+                         bg=theme.BG, fg=theme.FG_DIM,
+                         font=theme.tk_font(12),
+                         wraplength=600, justify="center")
+        _desc.pack(fill="x", padx=20, pady=(12, 8))
+        parent.bind("<Configure>", lambda e: _desc.configure(wraplength=max(100, e.width - 40)), add="+")
 
         # ── Link info panel ───────────────────────────────────────────────────
-        link_frame = tk.Frame(parent, bg="#16213e")
-        link_frame.pack(fill="x", padx=20, pady=(0, 10))
+        link_frame = ctk.CTkFrame(parent, fg_color=theme.PANEL, corner_radius=8)
+        link_frame.pack(fill="x", padx=40, pady=(0, 10))
 
-        tk.Label(link_frame, text="Link Status",
-                 bg="#0f3460", fg="#00d4ff",
-                 font=("Arial", 10, "bold"),
-                 padx=10, pady=4).pack(fill="x")
+        ctk.CTkLabel(link_frame, text="Link Status",
+                     fg_color=theme.DIVIDER, text_color=theme.ACCENT,
+                     font=theme.font(11, "bold"),
+                     corner_radius=0, anchor="center").pack(fill="x", padx=0, pady=0, ipady=8)
 
-        self._link_status_dot = tk.Label(link_frame, text="●  —",
-                                          bg="#16213e", fg="#555555",
-                                          font=("Arial", 12), padx=14, pady=6)
-        self._link_status_dot.pack(anchor="w")
+        self._link_status_dot = ctk.CTkLabel(link_frame, text="●  —",
+                                              fg_color="transparent",
+                                              text_color=theme.FG_HINT,
+                                              font=theme.font(13))
+        self._link_status_dot.pack(pady=(8, 4))
 
-        info_row = tk.Frame(link_frame, bg="#16213e")
-        info_row.pack(fill="x", padx=14, pady=(0, 10))
+        info_row = ctk.CTkFrame(link_frame, fg_color="transparent", corner_radius=0)
+        info_row.pack(pady=(0, 14))
 
-        self._speed_val  = self._stat_cell(info_row, "Speed",  "—")
-        self._duplex_val = self._stat_cell(info_row, "Duplex", "—")
+        self._speed_val  = self._stat_cell(info_row, "Speed",   "—")
+        self._duplex_val = self._stat_cell(info_row, "Duplex",  "—")
         self._iface_val  = self._stat_cell(info_row, "Adapter", "—")
 
         # ── Drop/error counter panel ──────────────────────────────────────────
-        drop_frame = tk.Frame(parent, bg="#16213e")
-        drop_frame.pack(fill="x", padx=20, pady=(0, 10))
+        drop_frame = ctk.CTkFrame(parent, fg_color=theme.PANEL, corner_radius=8)
+        drop_frame.pack(fill="x", padx=40, pady=(0, 10))
 
-        tk.Label(drop_frame, text="Packet Drops & Errors  (since monitor started)",
-                 bg="#0f3460", fg="#00d4ff",
-                 font=("Arial", 10, "bold"),
-                 padx=10, pady=4).pack(fill="x")
+        ctk.CTkLabel(drop_frame,
+                     text="Packet Drops & Errors  (since monitor started)",
+                     fg_color=theme.DIVIDER, text_color=theme.ACCENT,
+                     font=theme.font(11, "bold"),
+                     corner_radius=0, anchor="center").pack(fill="x", padx=0, pady=0, ipady=8)
 
-        counter_row = tk.Frame(drop_frame, bg="#16213e")
-        counter_row.pack(fill="x", padx=14, pady=10)
+        counter_row = ctk.CTkFrame(drop_frame, fg_color="transparent", corner_radius=0)
+        counter_row.pack(pady=14)
 
         self._dropin_val  = self._counter_cell(counter_row, "RX Drops")
         self._dropout_val = self._counter_cell(counter_row, "TX Drops")
@@ -139,60 +146,65 @@ class MonitorTab:
         self._errout_val  = self._counter_cell(counter_row, "TX Errors")
 
         # ── Status / buttons ──────────────────────────────────────────────────
-        self._status = tk.Label(parent,
-                                text="Press Start Monitor to begin",
-                                bg="#1a1a2e", fg="#888888",
-                                font=("Arial", 9))
+        self._status = ctk.CTkLabel(parent,
+                                    text="Press Start Monitor to begin",
+                                    fg_color="transparent", text_color=theme.FG_DIM,
+                                    font=theme.font(11))
         self._status.pack(pady=(0, 6))
 
-        btn_frame = tk.Frame(parent, bg="#1a1a2e")
+        btn_frame = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
         btn_frame.pack()
 
-        self._start_btn = tk.Button(btn_frame, text="Start Monitor",
-                                    command=self._start,
-                                    bg="#00d4ff", fg="#1a1a2e",
-                                    font=("Arial", 11, "bold"),
-                                    padx=20, relief="flat",
-                                    highlightthickness=0, borderwidth=0)
+        self._start_btn = ctk.CTkButton(btn_frame, text="Start Monitor",
+                                        command=self._start,
+                                        fg_color=theme.ACCENT, text_color=theme.BG,
+                                        hover_color="#00b8d9",
+                                        font=theme.font(11, "bold"),
+                                        corner_radius=6, border_width=0,
+                                        width=140)
         self._start_btn.pack(side="left", padx=5)
 
-        self._stop_btn = tk.Button(btn_frame, text="Stop",
-                                   command=self._stop,
-                                   bg="#16213e", fg="#ff4757",
-                                   font=("Arial", 11),
-                                   padx=20, relief="flat",
-                                   highlightthickness=0, borderwidth=0,
-                                   state="disabled")
+        self._stop_btn = ctk.CTkButton(btn_frame, text="Stop",
+                                       command=self._stop,
+                                       fg_color=theme.PANEL, text_color=theme.ERROR,
+                                       hover_color="#1f2d45",
+                                       font=theme.font(11),
+                                       corner_radius=6, border_width=0,
+                                       width=80, state="disabled")
         self._stop_btn.pack(side="left", padx=5)
 
-        self._reset_btn = tk.Button(btn_frame, text="Reset Counters",
-                                    command=self._reset_counters,
-                                    bg="#16213e", fg="#eee",
-                                    font=("Arial", 10),
-                                    padx=12, relief="flat",
-                                    highlightthickness=0, borderwidth=0,
-                                    state="disabled")
+        self._reset_btn = ctk.CTkButton(btn_frame, text="Reset Counters",
+                                        command=self._reset_counters,
+                                        fg_color=theme.PANEL, text_color=theme.FG,
+                                        hover_color="#1f2d45",
+                                        font=theme.font(10),
+                                        corner_radius=6, border_width=0,
+                                        width=130, state="disabled")
         self._reset_btn.pack(side="left", padx=5)
 
     def _stat_cell(self, parent, label, initial):
-        """Return the value Label for a two-line (label / value) stat cell."""
-        cell = tk.Frame(parent, bg="#16213e", padx=16)
-        cell.pack(side="left")
-        tk.Label(cell, text=label, bg="#16213e", fg="#555555",
-                 font=("Arial", 8)).pack(anchor="w")
-        val = tk.Label(cell, text=initial, bg="#16213e", fg="#eee",
-                       font=("Arial", 13, "bold"))
+        """Return the value CTkLabel for a two-line (label / value) stat cell."""
+        cell = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
+        cell.pack(side="left", padx=20)
+        ctk.CTkLabel(cell, text=label,
+                     fg_color="transparent", text_color=theme.FG_HINT,
+                     font=theme.font(11)).pack(anchor="w")
+        val = ctk.CTkLabel(cell, text=initial,
+                           fg_color="transparent", text_color=theme.FG,
+                           font=theme.font(13, "bold"))
         val.pack(anchor="w")
         return val
 
     def _counter_cell(self, parent, label):
-        """Return the value Label for a drop/error counter cell."""
-        cell = tk.Frame(parent, bg="#16213e", padx=20)
-        cell.pack(side="left")
-        tk.Label(cell, text=label, bg="#16213e", fg="#555555",
-                 font=("Arial", 8)).pack(anchor="w")
-        val = tk.Label(cell, text="0", bg="#16213e", fg="#00ff88",
-                       font=("Arial", 18, "bold"))
+        """Return the value CTkLabel for a drop/error counter cell."""
+        cell = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
+        cell.pack(side="left", padx=24)
+        ctk.CTkLabel(cell, text=label,
+                     fg_color="transparent", text_color=theme.FG_HINT,
+                     font=theme.font(11)).pack(anchor="w")
+        val = ctk.CTkLabel(cell, text="0",
+                           fg_color="transparent", text_color=theme.SUCCESS,
+                           font=theme.font(18, "bold"))
         val.pack(anchor="w")
         return val
 
@@ -201,20 +213,20 @@ class MonitorTab:
     def _start(self):
         self._psutil_iface = _find_psutil_iface(self._state.selected_iface)
         if not self._psutil_iface:
-            self._status.config(
+            self._status.configure(
                 text="Could not find a matching network adapter via psutil.",
-                fg="#ff4757")
+                text_color=theme.ERROR)
             return
 
         self._baseline = _get_counters(self._psutil_iface)
         self._running  = True
-        self._start_btn.config(state="disabled")
-        self._stop_btn.config(state="normal")
-        self._reset_btn.config(state="normal")
+        self._start_btn.configure(state="disabled")
+        self._stop_btn.configure(state="normal")
+        self._reset_btn.configure(state="normal")
         poll_s = self._state.settings.monitor_poll_ms // 1000
-        self._status.config(
+        self._status.configure(
             text=f"Monitoring {self._psutil_iface} — updates every {poll_s}s",
-            fg="#00d4ff")
+            text_color=theme.ACCENT)
         self._poll()
 
     def _stop(self):
@@ -222,10 +234,10 @@ class MonitorTab:
         if self._after_id:
             self._root.after_cancel(self._after_id)
             self._after_id = None
-        self._start_btn.config(state="normal")
-        self._stop_btn.config(state="disabled")
-        self._reset_btn.config(state="disabled")
-        self._status.config(text="Monitor stopped", fg="#888888")
+        self._start_btn.configure(state="normal")
+        self._stop_btn.configure(state="disabled")
+        self._reset_btn.configure(state="disabled")
+        self._status.configure(text="Monitor stopped", text_color=theme.FG_DIM)
 
     def _reset_counters(self):
         if self._psutil_iface:
@@ -248,36 +260,33 @@ class MonitorTab:
         if not self._running:
             return
 
-        # Link status row
         if is_up:
-            self._link_status_dot.config(text="●  Up", fg="#00ff88")
+            self._link_status_dot.configure(text="●  Up", text_color=theme.SUCCESS)
         else:
-            self._link_status_dot.config(text="●  Down", fg="#ff4757")
+            self._link_status_dot.configure(text="●  Down", text_color=theme.ERROR)
 
-        self._speed_val.config(
+        self._speed_val.configure(
             text=f"{speed} Mbps" if speed else "Unknown",
-            fg="#00d4ff" if speed >= 1000 else "#ffaa00" if speed > 0 else "#888888")
+            text_color=theme.ACCENT if speed >= 1000 else theme.WARNING if speed > 0 else theme.FG_DIM)
 
-        self._duplex_val.config(
+        self._duplex_val.configure(
             text=duplex,
-            fg="#00ff88" if duplex == "Full" else "#ff4757" if duplex == "Half" else "#888888")
+            text_color=theme.SUCCESS if duplex == "Full" else theme.ERROR if duplex == "Half" else theme.FG_DIM)
 
-        self._iface_val.config(text=self._psutil_iface, fg="#888888")
+        self._iface_val.configure(text=self._psutil_iface, text_color=theme.FG_DIM)
 
-        # Drop/error deltas
         if self._baseline:
             bi, bo, ei, eo = self._baseline
             ci, co, cei, ceo = current
             self._update_counter_display(ci - bi, co - bo, cei - ei, ceo - eo)
 
-        # Schedule next poll using current settings
         self._after_id = self._root.after(self._state.settings.monitor_poll_ms, self._poll)
 
     def _update_counter_display(self, dropin, dropout, errin, errout):
         def _colour(n):
-            return "#00ff88" if n == 0 else "#ff4757"
+            return theme.SUCCESS if n == 0 else theme.ERROR
 
-        self._dropin_val.config( text=str(dropin),  fg=_colour(dropin))
-        self._dropout_val.config(text=str(dropout), fg=_colour(dropout))
-        self._errin_val.config(  text=str(errin),   fg=_colour(errin))
-        self._errout_val.config( text=str(errout),  fg=_colour(errout))
+        self._dropin_val.configure( text=str(dropin),  text_color=_colour(dropin))
+        self._dropout_val.configure(text=str(dropout), text_color=_colour(dropout))
+        self._errin_val.configure(  text=str(errin),   text_color=_colour(errin))
+        self._errout_val.configure( text=str(errout),  text_color=_colour(errout))
