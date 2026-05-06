@@ -115,7 +115,7 @@ PiNT-Portable/
 - CustomTkinter
 - Pillow
 - openpyxl
-- PyInstaller
+- PyInstaller 
 
 ---
 
