@@ -1,5 +1,5 @@
 # 🍺 PiNT - Port Identifier Network Tool
-![Version](https://img.shields.io/badge/version-v1.0-blue)
+![Version](https://img.shields.io/badge/version-v1.1-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS-green)
 
@@ -12,7 +12,7 @@ A lightweight portable Windows tool that identifies which switch port your machi
 - **Live LLDP & CDP capture** — detects both protocols simultaneously
 - **Auto protocol detection** — works with Cisco (CDP) and all other vendors (LLDP)
 - **Multi-vendor LLDP support** — tested with TP-Link, Ruckus, UniFi and more
-- **Displays switch name, port, model, IP and VLAN**
+- **Port ID card layout** — Switch, Port, Protocol, Model, IP and VLAN displayed as live info cards
 - **Network adapter picker** — detects all interfaces on launch, lets you choose the right one with a recommended highlight; remembers selection for the session
 - **Quick Launch buttons** — once a management IP is found, one-click SSH and Telnet via PuTTY, or open HTTP/HTTPS in your browser
 - **Port Monitor tab** — displays negotiated link speed and duplex; tracks dropped and errored packets since monitoring started for basic cable-test feedback
@@ -24,6 +24,7 @@ A lightweight portable Windows tool that identifies which switch port your machi
 - **Session-scoped export to XLS** — accumulate results across multiple scans and export as a single styled Excel file
 - **Export to CSV** — save mDNS scan results for reporting
 - **Copy to clipboard** — paste results directly into Teams or email
+- **Scalable UI** — auto-detects screen resolution on startup and scales fonts, icons and layout accordingly; resizable window with 900×640 minimum
 - **Auto-installs Npcap** if not already present
 - **Single .exe** — no install required, just run it
 
@@ -71,8 +72,10 @@ PiNT-Portable/
 │   └── About.png
 └── gui/
     ├── __init__.py
+    ├── theme.py              # Centralised colours, fonts and ttk dark styling
+    ├── scale_manager.py      # Screen resolution detection and CTk scaling
     ├── interface_picker.py   # Network adapter selection dialog
-    ├── port_tab.py           # Port ID tab (LLDP/CDP + quick launch)
+    ├── port_tab.py           # Port ID tab (LLDP/CDP + card grid + quick launch)
     ├── mdns_tab.py           # mDNS browser tab
     ├── ip_tab.py             # IP Info & DHCP tab
     ├── monitor_tab.py        # Port Monitor tab (link speed, packet drops)
@@ -98,8 +101,8 @@ PiNT-Portable/
 | v0.5.3  | XLS column auto-fit, tab descriptions |
 | v0.6    | GUI refactored into gui/ package; network adapter picker; quick launch SSH/Telnet/HTTP/HTTPS |
 | v0.7    | Port Monitor tab: link speed/duplex, dropped packet counter; EXE publisher metadata; Change adapter button fix |
-| **v1.0**| **Current** — Full GUI overhaul: sidebar navigation, branded in-app logo, progress bars on scans, Settings panel, About panel, larger window |
-| v1.1    | Scalable window — resizable UI with adaptive fonts and layout for low-resolution display support |
+| v1.0    | Full GUI overhaul: sidebar navigation, branded in-app logo, progress bars on scans, Settings panel, About panel, larger window |
+| **v1.1**| **Current** — CustomTkinter migration: resizable window, auto-scaling UI, dark themed components, Port ID card grid, polished monitor and about panels |
 | Future  | Integrated iPerf3 tester |
 | Future  | macOS support |
 
@@ -109,7 +112,8 @@ PiNT-Portable/
 
 - Python
 - Scapy
-- Tkinter
+- CustomTkinter
+- Pillow
 - openpyxl
 - PyInstaller
 
@@ -130,7 +134,7 @@ PiNT-Portable/
 - [x] **v0.6** — GUI refactored into `gui/` package (one file per tab); network adapter picker on launch with recommended highlighting; quick launch buttons for SSH/Telnet (PuTTY) and HTTP/HTTPS once a management IP is detected
 - [x] **v0.7** — Port Monitor tab: negotiated link speed and duplex, live dropped/errored packet counter (basic cable-test feedback); EXE publisher metadata (Pi Network Tools); Change adapter button now always shows the picker
 - [x] **v1.0** — Full GUI overhaul: sidebar navigation replaces tab bar; branded in-app logo with aspect-ratio scaling; animated progress bars on Port ID and mDNS scans; Settings panel for scan timeouts and monitor poll interval; About panel inline; larger 1380×960 window
-- [ ] **v1.1** — Scalable window: resizable UI that adapts fonts, icons and layout to the window size — better support for lower resolution displays
+- [x] **v1.1** — CustomTkinter migration: auto-scaling UI based on screen resolution; resizable window (min 900×640); Port ID tab redesigned with live info card grid; dark-themed Treeview and scrollbars; centralised theme and scale manager modules; polished Monitor, About and sidebar panels throughout
 - [ ] **Future** — Integrated iPerf3 tester
 - [ ] **Future** — macOS support
 
