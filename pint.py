@@ -53,7 +53,7 @@ def _load_icon(filename, size=20):
 class PiNTApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("PiNT — Pi Network Tools")
+        self.root.title("Pi Network Tools — Port Identifier")
         from gui.scale_manager import current_scale
         _s = current_scale()
         self.root.geometry(f"{round(1380 * _s)}x{round(960 * _s)}")
@@ -138,11 +138,14 @@ class PiNTApp:
                                text="", fg_color="transparent")
             lbl.pack(padx=12, pady=(0, 8))
 
-            # Taskbar / window icon — iconphoto() requires a PhotoImage, not CTkImage
-            icon = Image.open(os.path.join(_base_path(), "logo.png")).resize(
-                (32, 32), Image.LANCZOS)
-            self._taskbar_icon = ImageTk.PhotoImage(icon)
-            self.root.iconphoto(True, self._taskbar_icon)
+            # Taskbar icon — iconbitmap() with ICO is the only reliable method on
+            # Windows with CTk; we convert logo.png to a temp ICO at runtime.
+            import tempfile
+            icon_src = Image.open(os.path.join(_base_path(), "logo.png"))
+            ico_path = os.path.join(tempfile.gettempdir(), "pint_icon.ico")
+            icon_src.save(ico_path, format="ICO",
+                          sizes=[(16, 16), (32, 32), (48, 48)])
+            self.root.after(100, lambda: self.root.iconbitmap(ico_path))
         except Exception:
             ctk.CTkLabel(frame, text="Pi Network\nTools",
                          fg_color="transparent", text_color=_ACCENT,

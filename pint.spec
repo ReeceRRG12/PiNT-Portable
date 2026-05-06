@@ -10,6 +10,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ('logo.png',           '.'),
+        ('logo.ico',           '.'),
         ('PiNT_InAppLogo.png', '.'),
         ('gui',                'gui'),
         ('icons',              'icons'),
@@ -61,6 +62,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['logo.png'],
+    icon=['logo.ico'],
     version='version_info.txt',
 )
