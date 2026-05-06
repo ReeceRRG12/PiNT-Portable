@@ -6,6 +6,9 @@ import webbrowser
 import os
 import shutil
 
+import customtkinter as ctk
+from gui import theme
+
 
 def _find_putty():
     """Locate PuTTY on Windows. Returns executable path or None."""
@@ -26,6 +29,7 @@ def _find_putty():
 class PortTab:
     """
     Port ID tab — listens for LLDP/CDP to identify the connected switch port.
+    Shows a card grid of fields that populate once a switch is detected.
     Shows quick-launch buttons (SSH, Telnet, HTTP, HTTPS) once a management IP
     is detected.
     """
@@ -37,85 +41,114 @@ class PortTab:
         self._build(parent)
 
     def _build(self, parent):
-        tk.Label(parent,
-                 text="Identifies which switch and port you are connected to by listening for "
-                      "LLDP and CDP packets broadcast by managed switches. Useful when tracing "
-                      "cables or auditing patch panels.",
-                 bg="#1a1a2e", fg="#888888",
-                 font=("Arial", 10),
-                 wraplength=1050, justify="left").pack(
-                     fill="x", padx=10, pady=(8, 6), anchor="w")
+        _desc = tk.Label(parent,
+                         text="Identifies which switch and port you are connected to by listening for "
+                              "LLDP and CDP packets broadcast by managed switches.\n\n"
+                              "Useful when tracing cables or auditing patch panels.",
+                         bg=theme.BG, fg=theme.FG_DIM,
+                         font=theme.tk_font(12),
+                         wraplength=600, justify="center")
+        _desc.pack(fill="x", padx=20, pady=(12, 8))
+        parent.bind("<Configure>", lambda e: _desc.configure(wraplength=max(100, e.width - 40)), add="+")
 
-        self.status = tk.Label(parent,
-                               text="Press Scan to detect your switch port",
-                               bg="#1a1a2e", fg="#888888")
+        self.status = ctk.CTkLabel(parent,
+                                   text="Press Scan to detect your switch port",
+                                   fg_color="transparent", text_color=theme.FG_DIM,
+                                   font=theme.font(10))
         self.status.pack(pady=(4, 2))
 
         style = ttk.Style()
         style.configure("Scan.Horizontal.TProgressbar",
-                        troughcolor="#16213e", background="#00d4ff",
-                        bordercolor="#16213e", lightcolor="#00d4ff", darkcolor="#00d4ff",
-                        thickness=6)
+                        troughcolor=theme.PANEL, background=theme.ACCENT,
+                        bordercolor=theme.PANEL, lightcolor=theme.ACCENT,
+                        darkcolor=theme.ACCENT, thickness=6)
         self._progress = ttk.Progressbar(parent, mode="indeterminate",
                                           style="Scan.Horizontal.TProgressbar")
-        self._progress.pack(fill="x", padx=20, pady=(0, 4))
+        self._progress.pack(fill="x", padx=20, pady=(0, 10))
 
-        self.result_frame = tk.Frame(parent, bg="#16213e", padx=20, pady=20)
-        self.result_frame.pack(fill="both", expand=True, padx=20, pady=(0, 10))
+        # ── Card grid ─────────────────────────────────────────────────────────
+        grid = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
+        grid.pack(fill="x", padx=20, pady=(0, 6))
+        grid.columnconfigure((0, 1, 2), weight=1, uniform="col")
 
-        self.result = tk.Label(self.result_frame, text="No data yet",
-                               bg="#16213e", fg="#eee",
-                               font=("Arial", 11), justify="left")
-        self.result.pack()
+        self._switch_val   = self._card(grid, "Switch",     0, 0)
+        self._port_val     = self._card(grid, "Port",        1, 0)
+        self._protocol_val = self._card(grid, "Protocol",   2, 0)
+        self._model_val    = self._card(grid, "Model",       0, 1)
+        self._ip_val       = self._card(grid, "IP Address",  1, 1)
+        self._vlan_val     = self._card(grid, "VLAN",        2, 1)
 
         # ── Quick-launch bar (hidden until a management IP is found) ──────────
-        self._ql_frame = tk.Frame(parent, bg="#1a1a2e")
+        self._ql_frame = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
 
-        tk.Label(self._ql_frame, text="Quick Launch →",
-                 bg="#1a1a2e", fg="#555555",
-                 font=("Arial", 8, "italic")).pack(side="left", padx=(12, 6))
+        ctk.CTkLabel(self._ql_frame, text="Quick Launch →",
+                     fg_color="transparent", text_color=theme.FG_HINT,
+                     font=theme.font(11, "italic")).pack(side="left", padx=(12, 6))
 
         for label, cmd, colour in [
-            ("SSH (PuTTY)",    self._launch_ssh,    "#00d4ff"),
-            ("Telnet (PuTTY)", self._launch_telnet, "#ffaa00"),
-            ("HTTP",           self._open_http,     "#eee"),
-            ("HTTPS",          self._open_https,    "#eee"),
+            ("SSH (PuTTY)",    self._launch_ssh,    theme.ACCENT),
+            ("Telnet (PuTTY)", self._launch_telnet, theme.WARNING),
+            ("HTTP",           self._open_http,     theme.FG),
+            ("HTTPS",          self._open_https,    theme.FG),
         ]:
-            tk.Button(self._ql_frame, text=label, command=cmd,
-                      bg="#16213e", fg=colour,
-                      font=("Arial", 9, "bold"),
-                      padx=10, pady=2,
-                      relief="flat", highlightthickness=0, borderwidth=0,
-                      cursor="hand2").pack(side="left", padx=3)
+            ctk.CTkButton(self._ql_frame, text=label, command=cmd,
+                          fg_color=theme.PANEL, text_color=colour,
+                          hover_color="#1f2d45",
+                          font=theme.font(11, "bold"),
+                          corner_radius=6, border_width=0,
+                          height=32).pack(side="left", padx=3)
 
         # ── Main action buttons ───────────────────────────────────────────────
-        self._btn_frame = tk.Frame(parent, bg="#1a1a2e")
-        self._btn_frame.pack(pady=5)
+        self._btn_frame = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
+        self._btn_frame.pack(pady=8)
 
-        self.scan_btn = tk.Button(self._btn_frame, text="Scan",
-                                  command=self.start_scan,
-                                  bg="#00d4ff", fg="#1a1a2e",
-                                  font=("Arial", 11, "bold"),
-                                  padx=20, relief="flat",
-                                  highlightthickness=0, borderwidth=0)
+        self.scan_btn = ctk.CTkButton(self._btn_frame, text="Scan",
+                                      command=self.start_scan,
+                                      fg_color=theme.ACCENT, text_color=theme.BG,
+                                      hover_color="#00b8d9",
+                                      font=theme.font(11, "bold"),
+                                      corner_radius=6, border_width=0,
+                                      width=100)
         self.scan_btn.pack(side="left", padx=5)
 
-        self.copy_btn = tk.Button(self._btn_frame, text="Copy to Clipboard",
-                                  command=self.copy_to_clipboard,
-                                  bg="#16213e", fg="#eee",
-                                  padx=20, relief="flat",
-                                  highlightthickness=0, borderwidth=0)
+        self.copy_btn = ctk.CTkButton(self._btn_frame, text="Copy to Clipboard",
+                                      command=self.copy_to_clipboard,
+                                      fg_color=theme.PANEL, text_color=theme.FG,
+                                      hover_color="#1f2d45",
+                                      font=theme.font(10),
+                                      corner_radius=6, border_width=0)
         self.copy_btn.pack(side="left", padx=5)
+
+    def _card(self, parent, label, col, row):
+        """Create a labeled info card. Returns the value CTkLabel."""
+        card = ctk.CTkFrame(parent, fg_color=theme.PANEL, corner_radius=8)
+        card.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+        ctk.CTkLabel(card, text=label,
+                     fg_color="transparent", text_color=theme.FG_HINT,
+                     font=theme.font(13, "bold"),
+                     anchor="w").pack(anchor="w", padx=14, pady=(12, 2))
+        val = ctk.CTkLabel(card, text="—",
+                           fg_color="transparent", text_color=theme.FG_DIM,
+                           font=theme.font(14, "bold"),
+                           anchor="w", wraplength=180, justify="left")
+        val.pack(anchor="w", padx=14, pady=(0, 12))
+        return val
+
+    def _reset_cards(self, colour=None):
+        for v in (self._switch_val, self._port_val, self._protocol_val,
+                  self._model_val,  self._ip_val,   self._vlan_val):
+            v.configure(text="—", text_color=colour or theme.FG_DIM)
 
     # ── Scan logic ────────────────────────────────────────────────────────────
 
     def start_scan(self):
         timeout = self._state.settings.port_timeout
-        self.scan_btn.config(state="disabled")
-        self.status.config(
-            text=f"Scanning for LLDP and CDP... (up to {timeout}s)", fg="#ffaa00")
-        self.result.config(text="Listening for switch...")
+        self.scan_btn.configure(state="disabled")
+        self.status.configure(
+            text=f"Scanning for LLDP and CDP... (up to {timeout}s)",
+            text_color=theme.WARNING)
         self._device = {}
+        self._reset_cards()
         self._ql_frame.pack_forget()
         self._progress.start(10)
         threading.Thread(target=self._run_scan, daemon=True).start()
@@ -134,29 +167,38 @@ class PortTab:
 
         if device:
             protocol     = device.get('protocol', 'Unknown')
-            proto_colour = "#00d4ff" if protocol == "LLDP" else "#ff9500"
-            text = (f"Switch:    {device.get('name',        'Unknown')}\n"
-                    f"Port:      {device.get('port',        'Unknown')}\n"
-                    f"Model:     {device.get('description', device.get('model', 'Unknown'))}\n"
-                    f"IP:        {device.get('ip',          'Unknown')}\n"
-                    f"VLAN:      {device.get('vlan',        'Unknown')}\n"
-                    f"Protocol:  {protocol}")
+            proto_colour = theme.ACCENT if protocol == "LLDP" else theme.WARNING
+
+            self._switch_val.configure(
+                text=device.get('name', '—'), text_color=theme.FG)
+            self._port_val.configure(
+                text=device.get('port', '—'), text_color=theme.FG)
+            self._protocol_val.configure(
+                text=protocol, text_color=proto_colour)
+            self._model_val.configure(
+                text=device.get('description', device.get('model', '—')),
+                text_color=theme.FG)
+            self._ip_val.configure(
+                text=device.get('ip', '—'), text_color=theme.ACCENT)
+            self._vlan_val.configure(
+                text=str(device.get('vlan', '—')), text_color=theme.FG)
+
             self._device = device
-            self.result.config(text=text, fg="#00ff88")
-            self.status.config(text=f"✅ Switch detected via {protocol}!", fg=proto_colour)
+            self.status.configure(
+                text=f"✅ Switch detected via {protocol}!", text_color=proto_colour)
             self._state.session.add_port_scan(device)
 
             mgmt_ip = device.get('ip', '')
             if mgmt_ip and mgmt_ip != 'Unknown':
                 self._ql_frame.pack(before=self._btn_frame, pady=(0, 4))
         else:
-            self.result.config(
-                text="No switch detected.\nAre you plugged into a managed switch?",
-                fg="#ff4757")
-            self.status.config(text="Scan timed out", fg="#ff4757")
+            self._reset_cards(theme.ERROR)
+            self.status.configure(
+                text="No switch detected. Are you plugged into a managed switch?",
+                text_color=theme.ERROR)
             self._ql_frame.pack_forget()
 
-        self.scan_btn.config(state="normal")
+        self.scan_btn.configure(state="normal")
 
     # ── Clipboard ─────────────────────────────────────────────────────────────
 
@@ -171,7 +213,7 @@ class PortTab:
                 f"Protocol: {d.get('protocol', 'Unknown')}")
         self._root.clipboard_clear()
         self._root.clipboard_append(text)
-        self.status.config(text="📋 Copied to clipboard!", fg="#00d4ff")
+        self.status.configure(text="📋 Copied to clipboard!", text_color=theme.ACCENT)
 
     # ── Quick-launch helpers ──────────────────────────────────────────────────
 
@@ -187,8 +229,9 @@ class PortTab:
         if putty:
             subprocess.Popen([putty, "-ssh", ip])
         else:
-            self.status.config(
-                text="PuTTY not found — download from putty.org", fg="#ff4757")
+            self.status.configure(
+                text="PuTTY not found — download from putty.org",
+                text_color=theme.ERROR)
 
     def _launch_telnet(self):
         ip = self._mgmt_ip()
@@ -198,8 +241,9 @@ class PortTab:
         if putty:
             subprocess.Popen([putty, "-telnet", ip])
         else:
-            self.status.config(
-                text="PuTTY not found — download from putty.org", fg="#ff4757")
+            self.status.configure(
+                text="PuTTY not found — download from putty.org",
+                text_color=theme.ERROR)
 
     def _open_http(self):
         ip = self._mgmt_ip()

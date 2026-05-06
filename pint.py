@@ -3,6 +3,8 @@ from tkinter import ttk
 import os
 import sys
 
+import customtkinter as ctk
+
 from session import SessionManager
 from gui.interface_picker import InterfacePicker, get_iface_display
 from gui.port_tab     import PortTab
@@ -40,10 +42,10 @@ def _base_path():
 
 def _load_icon(filename, size=20):
     try:
-        from PIL import Image, ImageTk
+        from PIL import Image
         path = os.path.join(_base_path(), "icons", filename)
         img = Image.open(path).convert("RGBA").resize((size, size), Image.LANCZOS)
-        return ImageTk.PhotoImage(img)
+        return ctk.CTkImage(light_image=img, dark_image=img, size=(size, size))
     except Exception:
         return None
 
@@ -52,11 +54,17 @@ class PiNTApp:
     def __init__(self, root):
         self.root = root
         self.root.title("PiNT — Pi Network Tools")
-        self.root.geometry("1380x960")
-        self.root.configure(bg=_BG)
-        self.root.resizable(False, False)
+        from gui.scale_manager import current_scale
+        _s = current_scale()
+        self.root.geometry(f"{round(1380 * _s)}x{round(960 * _s)}")
+        self.root.configure(fg_color=_BG)
+        self.root.resizable(True, True)
+        self.root.minsize(900, 640)
 
-        ttk.Style().theme_use("clam")
+        _style = ttk.Style()
+        _style.theme_use("clam")
+        from gui.theme import apply_scrollbar_style
+        apply_scrollbar_style(_style)
 
         picker      = InterfacePicker(root)
         session     = SessionManager()
@@ -87,12 +95,13 @@ class PiNTApp:
     # ── Sidebar ───────────────────────────────────────────────────────────────
 
     def _build_sidebar(self):
-        sidebar = tk.Frame(self.root, bg=_SIDEBAR, width=_NAV_W)
+        sidebar = ctk.CTkFrame(self.root, fg_color=_SIDEBAR, width=_NAV_W, corner_radius=0)
         sidebar.pack(side="left", fill="y")
         sidebar.pack_propagate(False)
 
+        tk.Frame(sidebar, bg=_SIDEBAR, height=10).pack(fill="x")
         self._build_sidebar_header(sidebar)
-        tk.Frame(sidebar, bg="#0f3460", height=1).pack(fill="x", padx=12, pady=(4, 8))
+        ctk.CTkFrame(sidebar, fg_color="#0f3460", height=2, corner_radius=0).pack(fill="x", padx=12, pady=(4, 8))
 
         for key, icon_key, label in [
             ("port",    "port",    "Port ID"),
@@ -104,98 +113,91 @@ class PiNTApp:
             self._nav_btn(sidebar, key, self._icons[icon_key], label)
 
         # Push Settings / About to bottom
-        tk.Frame(sidebar, bg=_SIDEBAR).pack(fill="both", expand=True)
-        tk.Frame(sidebar, bg="#0f3460", height=1).pack(fill="x", padx=12, pady=6)
+        ctk.CTkFrame(sidebar, fg_color=_SIDEBAR, corner_radius=0).pack(fill="both", expand=True)
+        ctk.CTkFrame(sidebar, fg_color="#0f3460", height=2, corner_radius=0).pack(fill="x", padx=12, pady=6)
         self._nav_btn(sidebar, "settings", self._icons["settings"], "Settings")
         self._nav_btn(sidebar, "about",    self._icons["about"],    "About")
 
-        tk.Frame(sidebar, bg="#0f3460", height=1).pack(fill="x", padx=12, pady=(6, 2))
+        ctk.CTkFrame(sidebar, fg_color="#0f3460", height=2, corner_radius=0).pack(fill="x", padx=12, pady=(6, 2))
         self._build_adapter_bar(sidebar)
 
     def _build_sidebar_header(self, parent):
-        frame = tk.Frame(parent, bg=_SIDEBAR)
+        frame = ctk.CTkFrame(parent, fg_color=_SIDEBAR, corner_radius=0)
         frame.pack(fill="x")
 
         try:
             from PIL import Image, ImageTk
 
-            # In-app logo: fill sidebar width, preserve aspect ratio
+            # In-app logo: leave side margins by using a narrower width
             app_logo = Image.open(os.path.join(_base_path(), "PiNT_InAppLogo.png"))
-            w = _NAV_W
+            w = _NAV_W - 24
             h = int(app_logo.height * (w / app_logo.width))
-            app_logo = app_logo.resize((w, h), Image.LANCZOS)
-            self._app_logo_img = ImageTk.PhotoImage(app_logo)
-            lbl = tk.Label(frame, image=self._app_logo_img, bg=_SIDEBAR)
-            lbl.image = self._app_logo_img
-            lbl.pack()
+            self._app_logo_img = ctk.CTkImage(
+                light_image=app_logo, dark_image=app_logo, size=(w, h))
+            lbl = ctk.CTkLabel(frame, image=self._app_logo_img,
+                               text="", fg_color="transparent")
+            lbl.pack(padx=12, pady=(0, 8))
 
-            # Taskbar / window icon: keep the original logo.png
+            # Taskbar / window icon — iconphoto() requires a PhotoImage, not CTkImage
             icon = Image.open(os.path.join(_base_path(), "logo.png")).resize(
                 (32, 32), Image.LANCZOS)
             self._taskbar_icon = ImageTk.PhotoImage(icon)
             self.root.iconphoto(True, self._taskbar_icon)
         except Exception:
-            tk.Label(frame, text="Pi Network\nTools",
-                     bg=_SIDEBAR, fg=_ACCENT,
-                     font=("Arial", 10, "bold"),
-                     justify="center").pack(pady=14)
+            ctk.CTkLabel(frame, text="Pi Network\nTools",
+                         fg_color="transparent", text_color=_ACCENT,
+                         font=ctk.CTkFont("Arial", 10, weight="bold"),
+                         justify="center").pack(pady=14)
 
     def _build_adapter_bar(self, parent):
-        frame = tk.Frame(parent, bg=_SIDEBAR)
+        frame = ctk.CTkFrame(parent, fg_color=_SIDEBAR, corner_radius=0)
         frame.pack(fill="x", padx=8, pady=(0, 10))
 
-        tk.Label(frame, text="Adapter",
-                 bg=_SIDEBAR, fg="#666666",
-                 font=("Arial", 9, "bold")).pack(anchor="w")
+        ctk.CTkLabel(frame, text="Adapter",
+                     fg_color="transparent", text_color="#666666",
+                     font=ctk.CTkFont("Arial", 11, weight="bold"),
+                     anchor="w").pack(anchor="w", fill="x")
 
-        self._iface_label = tk.Label(
+        self._iface_label = ctk.CTkLabel(
             frame,
             text=get_iface_display(self._state.selected_iface),
-            bg=_SIDEBAR, fg="#888888",
-            font=("Arial", 9),
-            wraplength=190, justify="left")
+            fg_color="transparent", text_color="#888888",
+            font=ctk.CTkFont("Arial", 10),
+            wraplength=190, justify="left", anchor="w")
         self._iface_label.pack(anchor="w")
 
-        tk.Button(frame, text="Change adapter",
-                  command=self._change_interface,
-                  bg=_SIDEBAR, fg=_ACCENT,
-                  font=("Arial", 9, "underline"),
-                  relief="flat", highlightthickness=0, borderwidth=0,
-                  cursor="hand2").pack(anchor="w", pady=(2, 0))
+        ctk.CTkButton(frame, text="Change adapter",
+                      command=self._change_interface,
+                      fg_color="transparent", text_color=_ACCENT,
+                      hover_color="#1f2d45",
+                      font=ctk.CTkFont("Arial", 11, underline=True),
+                      anchor="w", height=24, corner_radius=0,
+                      border_width=0).pack(anchor="w", pady=(2, 0))
 
     def _nav_btn(self, parent, key, icon_img, label):
-        btn = tk.Button(
+        btn = ctk.CTkButton(
             parent,
             text=f"  {label}",
             image=icon_img,
-            compound="left" if icon_img else "none",
+            compound="left",
             anchor="w",
-            bg=_SIDEBAR, fg="#888888",
-            activebackground="#1f2d45", activeforeground=_ACCENT,
-            font=("Arial", 10),
-            relief="flat", highlightthickness=0, borderwidth=0,
-            padx=8, pady=9,
+            fg_color="#111d2e",
+            text_color="#888888",
+            hover_color="#1f2d45",
+            font=ctk.CTkFont("Arial", 11, weight="bold"),
+            height=42,
+            corner_radius=6,
+            border_width=0,
             cursor="hand2",
             command=lambda k=key: self._navigate(k),
         )
-        btn.pack(fill="x")
-
-        def _enter(b=btn, k=key):
-            if k != self._active_panel:
-                b.config(fg="#cccccc")
-
-        def _leave(b=btn, k=key):
-            if k != self._active_panel:
-                b.config(fg="#888888")
-
-        btn.bind("<Enter>", lambda _: _enter())
-        btn.bind("<Leave>", lambda _: _leave())
+        btn.pack(fill="x", padx=6, pady=2)
         self._nav_buttons[key] = btn
 
     # ── Content area ──────────────────────────────────────────────────────────
 
     def _build_content(self):
-        content = tk.Frame(self.root, bg=_BG)
+        content = ctk.CTkFrame(self.root, fg_color=_BG, corner_radius=0)
         content.pack(side="left", fill="both", expand=True)
 
         def _panel(key):
@@ -215,68 +217,69 @@ class PiNTApp:
     def _build_about_panel(self, parent):
         import webbrowser
 
-        frame = tk.Frame(parent, bg=_BG)
+        frame = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
         frame.place(relx=0.5, rely=0.46, anchor="center")
 
         try:
-            from PIL import Image, ImageTk
+            from PIL import Image
             about_logo = Image.open(os.path.join(_base_path(), "PiNT_InAppLogo.png"))
-            w = 200
+            w = 260
             h = int(about_logo.height * (w / about_logo.width))
-            about_logo = about_logo.resize((w, h), Image.LANCZOS)
-            about_img = ImageTk.PhotoImage(about_logo)
-            lbl = tk.Label(frame, image=about_img, bg=_BG)
-            lbl.image = about_img
-            lbl.pack(pady=(0, 8))
+            about_img = ctk.CTkImage(light_image=about_logo, dark_image=about_logo,
+                                     size=(w, h))
+            ctk.CTkLabel(frame, image=about_img, text="",
+                         fg_color="transparent").pack(pady=(0, 10))
         except Exception:
             pass
 
-        tk.Label(frame, text="PiNT — Port Identifier Network Tool",
-                 bg=_BG, fg=_ACCENT,
-                 font=("Arial", 13, "bold")).pack()
+        ctk.CTkLabel(frame, text="PiNT — Port Identifier Network Tool",
+                     fg_color="transparent", text_color=_ACCENT,
+                     font=ctk.CTkFont("Arial", 16, weight="bold")).pack()
 
-        tk.Label(frame, text="Version v1.0",
-                 bg=_BG, fg="#888888",
-                 font=("Arial", 10)).pack(pady=(2, 0))
+        ctk.CTkLabel(frame, text="Version v1.1",
+                     fg_color="transparent", text_color="#888888",
+                     font=ctk.CTkFont("Arial", 12)).pack(pady=(3, 0))
 
-        tk.Frame(frame, bg="#0f3460", height=1).pack(fill="x", padx=20, pady=12)
+        ctk.CTkFrame(frame, fg_color="#0f3460", height=2,
+                     corner_radius=0).pack(fill="x", padx=20, pady=14)
 
-        tk.Label(frame,
-                 text="A lightweight tool for field technicians to identify\n"
-                      "switch ports and discover mDNS devices on a network.",
-                 bg=_BG, fg="#eeeeee",
-                 font=("Arial", 10), justify="center").pack()
+        ctk.CTkLabel(frame,
+                     text="A lightweight tool for field technicians to identify\n"
+                          "switch ports and discover mDNS devices on a network.",
+                     fg_color="transparent", text_color="#eeeeee",
+                     font=ctk.CTkFont("Arial", 13), justify="center").pack()
 
-        tk.Frame(frame, bg="#0f3460", height=1).pack(fill="x", padx=20, pady=12)
+        ctk.CTkFrame(frame, fg_color="#0f3460", height=2,
+                     corner_radius=0).pack(fill="x", padx=20, pady=14)
 
-        tk.Label(frame, text="Built by Reece Rainer",
-                 bg=_BG, fg="#888888",
-                 font=("Arial", 10)).pack()
+        ctk.CTkLabel(frame, text="Built by Reece Rainer",
+                     fg_color="transparent", text_color="#888888",
+                     font=ctk.CTkFont("Arial", 12)).pack()
 
         for text, url in [
-            ("reece@pinetworktools.com",           "mailto:reece@pinetworktools.com"),
+            ("reece@pinetworktools.com",            "mailto:reece@pinetworktools.com"),
             ("github.com/ReeceRRG12/PiNT-Portable", "https://github.com/ReeceRRG12/PiNT-Portable"),
         ]:
-            lbl = tk.Label(frame, text=text,
-                           bg=_BG, fg=_ACCENT,
-                           font=("Arial", 10, "underline"),
-                           cursor="hand2")
-            lbl.pack(pady=2)
+            lbl = ctk.CTkLabel(frame, text=text,
+                               fg_color="transparent", text_color=_ACCENT,
+                               font=ctk.CTkFont("Arial", 12, underline=True),
+                               cursor="hand2")
+            lbl.pack(pady=3)
             lbl.bind("<Button-1>", lambda _, u=url: webbrowser.open(u))
 
-        tk.Label(frame,
-                 text="Fully Open Source — Built with ❤️ for the networking community",
-                 bg=_BG, fg="#555555",
-                 font=("Arial", 9)).pack(pady=(12, 0))
+        ctk.CTkLabel(frame,
+                     text="Fully Open Source — Built with ❤️ for the networking community",
+                     fg_color="transparent", text_color="#555555",
+                     font=ctk.CTkFont("Arial", 11)).pack(pady=(14, 0))
 
     # ── Navigation ────────────────────────────────────────────────────────────
 
     def _navigate(self, key):
         for k, btn in self._nav_buttons.items():
             if k == key:
-                btn.config(fg=_ACCENT, bg="#1f2d45")
+                btn.configure(text_color=_ACCENT, fg_color="#1a3050")
             else:
-                btn.config(fg="#888888", bg=_SIDEBAR)
+                btn.configure(text_color="#888888", fg_color="#111d2e")
         self._active_panel = key
         self._panels[key].tkraise()
 
@@ -284,7 +287,7 @@ class PiNTApp:
         picker = InterfacePicker(self.root, force=True)
         if picker.result is not None:
             self._state.selected_iface = picker.result
-        self._iface_label.config(text=get_iface_display(self._state.selected_iface))
+        self._iface_label.configure(text=get_iface_display(self._state.selected_iface))
 
 
 # ── Npcap check (Windows) ─────────────────────────────────────────────────────
@@ -312,8 +315,14 @@ def check_and_install_npcap():
 
 
 if __name__ == "__main__":
+    from gui.scale_manager import detect_scale, apply_scale
+
     if sys.platform == "win32":
         check_and_install_npcap()
-    root = tk.Tk()
-    app  = PiNTApp(root)
+
+    # Scale must be applied before ctk.CTk() is created
+    ctk.set_appearance_mode("dark")
+    apply_scale(detect_scale())
+    root = ctk.CTk()
+    app = PiNTApp(root)
     root.mainloop()

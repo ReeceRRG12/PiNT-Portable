@@ -1,6 +1,9 @@
 import tkinter as tk
 from tkinter import ttk
 
+import customtkinter as ctk
+from gui import theme
+
 
 def _enumerate_interfaces():
     """
@@ -81,27 +84,24 @@ class InterfacePicker:
         self._interfaces = _enumerate_interfaces()
 
         if not self._interfaces:
-            return  # nothing usable — let scapy auto-detect
+            return
 
         if not force:
-            # One usable interface: silently auto-select it
             if len(self._interfaces) == 1:
                 self.result = self._interfaces[0]['name']
                 return
 
-            # One clearly recommended interface amid virtual/wireless: auto-select
             recommended = [i for i in self._interfaces if i['recommended']]
             if len(recommended) == 1:
                 self.result = recommended[0]['name']
                 return
 
-        # Multiple plausible interfaces (or forced by user): show the dialog
         self._build(parent)
 
     def _build(self, parent):
-        win = tk.Toplevel(parent)
+        win = ctk.CTkToplevel(parent)
         win.title("Select Network Interface")
-        win.configure(bg="#1a1a2e")
+        win.configure(fg_color=theme.BG)
         win.resizable(False, False)
         win.grab_set()
 
@@ -111,34 +111,27 @@ class InterfacePicker:
         py = parent.winfo_y() + max(0, (parent.winfo_height() // 2) - h // 2)
         win.geometry(f"{w}x{h}+{px}+{py}")
 
-        tk.Label(win, text="Select Network Interface",
-                 bg="#1a1a2e", fg="#00d4ff",
-                 font=("Arial", 14, "bold")).pack(pady=(16, 4))
+        ctk.CTkLabel(win, text="Select Network Interface",
+                     fg_color="transparent", text_color=theme.ACCENT,
+                     font=theme.font(14, "bold")).pack(pady=(16, 4))
 
-        tk.Label(win,
-                 text="Multiple network adapters detected. "
-                      "Select the wired Ethernet interface connected to your managed switch.",
-                 bg="#1a1a2e", fg="#888888",
-                 font=("Arial", 9),
-                 wraplength=600, justify="center").pack(pady=(0, 10))
+        ctk.CTkLabel(win,
+                     text="Multiple network adapters detected. "
+                          "Select the wired Ethernet interface connected to your managed switch.",
+                     fg_color="transparent", text_color=theme.FG_DIM,
+                     font=theme.font(9),
+                     wraplength=600, justify="center").pack(pady=(0, 10))
 
-        tree_frame = tk.Frame(win, bg="#1a1a2e")
+        tree_frame = ctk.CTkFrame(win, fg_color="transparent", corner_radius=0)
         tree_frame.pack(fill="both", expand=True, padx=16, pady=(0, 6))
 
         style = ttk.Style()
-        style.configure("Picker.Treeview",
-                         background="#16213e", foreground="#eee",
-                         fieldbackground="#16213e",
-                         rowheight=30, font=("Arial", 10))
-        style.configure("Picker.Treeview.Heading",
-                         background="#0f3460", foreground="#00d4ff",
-                         font=("Arial", 10, "bold"))
-        style.map("Picker.Treeview", background=[("selected", "#0f3460")])
+        theme.apply_treeview_style(style)
 
         tree = ttk.Treeview(tree_frame,
                              columns=("desc", "ip", "mac", "type"),
                              show="headings",
-                             style="Picker.Treeview",
+                             style="PiNT.Treeview",
                              selectmode="browse",
                              height=7)
         tree.heading("desc", text="Interface Name")
@@ -168,8 +161,8 @@ class InterfacePicker:
             if iface["recommended"] and first_rec is None:
                 first_rec = iid
 
-        tree.tag_configure("rec",   foreground="#00ff88")
-        tree.tag_configure("other", foreground="#888888")
+        tree.tag_configure("rec",   foreground=theme.SUCCESS)
+        tree.tag_configure("other", foreground=theme.FG_DIM)
 
         default = first_rec or (list(self._iface_map)[0] if self._iface_map else None)
         if default:
@@ -178,12 +171,14 @@ class InterfacePicker:
 
         self._tree = tree
 
-        legend = tk.Frame(win, bg="#1a1a2e")
+        legend = ctk.CTkFrame(win, fg_color="transparent", corner_radius=0)
         legend.pack(fill="x", padx=16, pady=(0, 6))
-        tk.Label(legend, text="●  Recommended (wired, active)",
-                 fg="#00ff88", bg="#1a1a2e", font=("Arial", 9)).pack(side="left")
-        tk.Label(legend, text="    ●  Other",
-                 fg="#888888", bg="#1a1a2e", font=("Arial", 9)).pack(side="left")
+        ctk.CTkLabel(legend, text="●  Recommended (wired, active)",
+                     text_color=theme.SUCCESS, fg_color="transparent",
+                     font=theme.font(9)).pack(side="left")
+        ctk.CTkLabel(legend, text="    ●  Other",
+                     text_color=theme.FG_DIM, fg_color="transparent",
+                     font=theme.font(9)).pack(side="left")
 
         def _confirm():
             sel = tree.selection()
@@ -191,22 +186,24 @@ class InterfacePicker:
                 self.result = self._iface_map[sel[0]]["name"]
             win.destroy()
 
-        btn_frame = tk.Frame(win, bg="#1a1a2e")
+        btn_frame = ctk.CTkFrame(win, fg_color="transparent", corner_radius=0)
         btn_frame.pack(pady=(0, 14))
 
-        tk.Button(btn_frame, text="Use Selected Interface",
-                  command=_confirm,
-                  bg="#00d4ff", fg="#1a1a2e",
-                  font=("Arial", 11, "bold"),
-                  padx=20, relief="flat",
-                  highlightthickness=0, borderwidth=0).pack(side="left", padx=5)
+        ctk.CTkButton(btn_frame, text="Use Selected Interface",
+                      command=_confirm,
+                      fg_color=theme.ACCENT, text_color=theme.BG,
+                      hover_color="#00b8d9",
+                      font=theme.font(11, "bold"),
+                      corner_radius=6, border_width=0,
+                      width=200).pack(side="left", padx=5)
 
-        tk.Button(btn_frame, text="Auto-detect",
-                  command=win.destroy,
-                  bg="#16213e", fg="#888888",
-                  font=("Arial", 10),
-                  padx=12, relief="flat",
-                  highlightthickness=0, borderwidth=0).pack(side="left", padx=5)
+        ctk.CTkButton(btn_frame, text="Auto-detect",
+                      command=win.destroy,
+                      fg_color=theme.PANEL, text_color=theme.FG_DIM,
+                      hover_color="#1f2d45",
+                      font=theme.font(10),
+                      corner_radius=6, border_width=0,
+                      width=110).pack(side="left", padx=5)
 
         win.protocol("WM_DELETE_WINDOW", _confirm)
         parent.wait_window(win)

@@ -5,6 +5,9 @@ import csv
 import os
 from datetime import datetime
 
+import customtkinter as ctk
+from gui import theme
+
 
 class MdnsTab:
     """
@@ -19,91 +22,89 @@ class MdnsTab:
         self._build(parent)
 
     def _build(self, parent):
-        tk.Label(parent,
-                 text="Discovers devices on the local network that advertise services via mDNS "
-                      "(Bonjour). Commonly used to find printers, cameras, smart devices, and "
-                      "Apple services without needing access to the switch or DHCP server.",
-                 bg="#1a1a2e", fg="#888888",
-                 font=("Arial", 10),
-                 wraplength=1050, justify="left").pack(
-                     fill="x", padx=10, pady=(8, 6), anchor="w")
+        _desc = tk.Label(parent,
+                         text="Discovers devices on the local network that advertise services via mDNS (Bonjour).\n\n"
+                              "Commonly used to find printers, cameras, smart devices, and Apple services "
+                              "without needing access to the switch or DHCP server.",
+                         bg=theme.BG, fg=theme.FG_DIM,
+                         font=theme.tk_font(12),
+                         wraplength=600, justify="center")
+        _desc.pack(fill="x", padx=20, pady=(12, 8))
+        parent.bind("<Configure>", lambda e: _desc.configure(wraplength=max(100, e.width - 40)), add="+")
 
         # ── Top toolbar ───────────────────────────────────────────────────────
-        top = tk.Frame(parent, bg="#1a1a2e")
+        top = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
         top.pack(fill="x", padx=10, pady=(0, 2))
 
-        self.status = tk.Label(top, text="Press Scan to discover mDNS devices",
-                               bg="#1a1a2e", fg="#888888")
+        self.status = ctk.CTkLabel(top, text="Press Scan to discover mDNS devices",
+                                   fg_color="transparent", text_color=theme.FG_DIM,
+                                   font=theme.font(10))
         self.status.pack(side="left")
 
-        self.scan_btn = tk.Button(top, text="Scan",
-                                  command=self.start_scan,
-                                  bg="#00d4ff", fg="#1a1a2e",
-                                  font=("Arial", 10, "bold"),
-                                  padx=15, relief="flat",
-                                  highlightthickness=0, borderwidth=0)
+        self.scan_btn = ctk.CTkButton(top, text="Scan",
+                                      command=self.start_scan,
+                                      fg_color=theme.ACCENT, text_color=theme.BG,
+                                      hover_color="#00b8d9",
+                                      font=theme.font(10, "bold"),
+                                      corner_radius=6, border_width=0,
+                                      width=80)
         self.scan_btn.pack(side="right")
 
-        self.toggle_btn = tk.Button(top, text="Full View",
-                                    command=self._toggle_view,
-                                    bg="#16213e", fg="#eee",
-                                    font=("Arial", 10),
-                                    padx=10, relief="flat",
-                                    highlightthickness=0, borderwidth=0)
+        self.toggle_btn = ctk.CTkButton(top, text="Full View",
+                                        command=self._toggle_view,
+                                        fg_color=theme.PANEL, text_color=theme.FG,
+                                        hover_color="#1f2d45",
+                                        font=theme.font(10),
+                                        corner_radius=6, border_width=0,
+                                        width=90)
         self.toggle_btn.pack(side="right", padx=(0, 5))
 
-        self.resolve_btn = tk.Button(top, text="Resolve IPs",
-                                     command=self._start_resolve,
-                                     bg="#16213e", fg="#eee",
-                                     font=("Arial", 10),
-                                     padx=10, relief="flat",
-                                     highlightthickness=0, borderwidth=0,
-                                     state="disabled")
+        self.resolve_btn = ctk.CTkButton(top, text="Resolve IPs",
+                                         command=self._start_resolve,
+                                         fg_color=theme.PANEL, text_color=theme.FG,
+                                         hover_color="#1f2d45",
+                                         font=theme.font(10),
+                                         corner_radius=6, border_width=0,
+                                         width=100, state="disabled")
         self.resolve_btn.pack(side="right", padx=(0, 5))
 
         # ── Progress bar ──────────────────────────────────────────────────────
         style = ttk.Style()
         style.configure("Scan.Horizontal.TProgressbar",
-                        troughcolor="#16213e", background="#00d4ff",
-                        bordercolor="#16213e", lightcolor="#00d4ff", darkcolor="#00d4ff",
-                        thickness=6)
+                        troughcolor=theme.PANEL, background=theme.ACCENT,
+                        bordercolor=theme.PANEL, lightcolor=theme.ACCENT,
+                        darkcolor=theme.ACCENT, thickness=6)
         self._progress = ttk.Progressbar(parent, mode="indeterminate",
                                           style="Scan.Horizontal.TProgressbar")
         self._progress.pack(fill="x", padx=10, pady=(0, 4))
 
         # ── Filter bar ────────────────────────────────────────────────────────
-        search = tk.Frame(parent, bg="#1a1a2e")
+        search = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
         search.pack(fill="x", padx=10, pady=(0, 5))
 
-        tk.Label(search, text="Filter:", bg="#1a1a2e", fg="#888888").pack(side="left")
+        ctk.CTkLabel(search, text="Filter:",
+                     fg_color="transparent", text_color=theme.FG_DIM,
+                     font=theme.font(10)).pack(side="left")
+
         self._filter_var = tk.StringVar()
         self._filter_var.trace_add("write", self._apply_filter)
-        tk.Entry(search,
-                 textvariable=self._filter_var,
-                 bg="#16213e", fg="#eee",
-                 insertbackground="#eee",
-                 relief="flat", font=("Arial", 10)).pack(
-                     side="left", fill="x", expand=True, padx=(5, 0))
+        ctk.CTkEntry(search,
+                     textvariable=self._filter_var,
+                     fg_color=theme.PANEL, text_color=theme.FG,
+                     border_color=theme.DIVIDER, border_width=1,
+                     font=theme.font(10)).pack(
+                         side="left", fill="x", expand=True, padx=(5, 0))
 
         # ── Results tree ──────────────────────────────────────────────────────
-        tree_frame = tk.Frame(parent, bg="#1a1a2e")
+        tree_frame = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
         tree_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
 
-        style.configure("Treeview",
-                        background="#16213e", foreground="#eee",
-                        fieldbackground="#16213e", bordercolor="#16213e",
-                        rowheight=28, font=("Arial", 10))
-        style.configure("Treeview.Heading",
-                        background="#0f3460", foreground="#00d4ff",
-                        bordercolor="#0f3460",
-                        font=("Arial", 10, "bold"))
-        style.map("Treeview",
-                  background=[("selected", "#0f3460")],
-                  foreground=[("selected", "#ffffff")])
+        theme.apply_treeview_style(style)
 
         self._tree = ttk.Treeview(tree_frame,
                                    columns=("friendly", "type", "ip"),
                                    show="headings",
+                                   style="PiNT.Treeview",
                                    selectmode="browse")
         self._tree.heading("friendly", text="Device Name")
         self._tree.heading("type",     text="Service Type")
@@ -118,28 +119,30 @@ class MdnsTab:
         sb.pack(side="right", fill="y")
 
         # ── Bottom bar ────────────────────────────────────────────────────────
-        bottom = tk.Frame(parent, bg="#1a1a2e")
+        bottom = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
         bottom.pack(fill="x", padx=10, pady=(0, 5))
 
-        self._detail = tk.Label(bottom, text="",
-                                bg="#1a1a2e", fg="#888888",
-                                font=("Arial", 9), anchor="w")
+        self._detail = ctk.CTkLabel(bottom, text="",
+                                    fg_color="transparent", text_color=theme.FG_DIM,
+                                    font=theme.font(9), anchor="w")
         self._detail.pack(side="left", fill="x", expand=True)
 
-        self.export_btn = tk.Button(bottom, text="Export CSV",
-                                    command=self._export_csv,
-                                    bg="#16213e", fg="#eee",
-                                    font=("Arial", 9), padx=8,
-                                    relief="flat", highlightthickness=0, borderwidth=0,
-                                    state="disabled")
+        self.export_btn = ctk.CTkButton(bottom, text="Export CSV",
+                                        command=self._export_csv,
+                                        fg_color=theme.PANEL, text_color=theme.FG,
+                                        hover_color="#1f2d45",
+                                        font=theme.font(9),
+                                        corner_radius=6, border_width=0,
+                                        width=90, state="disabled")
         self.export_btn.pack(side="right", padx=(5, 0))
 
-        self.copy_btn = tk.Button(bottom, text="Copy",
-                                  command=self._copy,
-                                  bg="#16213e", fg="#eee",
-                                  font=("Arial", 9), padx=8,
-                                  relief="flat", highlightthickness=0, borderwidth=0,
-                                  state="disabled")
+        self.copy_btn = ctk.CTkButton(bottom, text="Copy",
+                                      command=self._copy,
+                                      fg_color=theme.PANEL, text_color=theme.FG,
+                                      hover_color="#1f2d45",
+                                      font=theme.font(9),
+                                      corner_radius=6, border_width=0,
+                                      width=60, state="disabled")
         self.copy_btn.pack(side="right", padx=(5, 0))
 
         self._tree.bind("<<TreeviewSelect>>", self._on_select)
@@ -148,15 +151,17 @@ class MdnsTab:
 
     def start_scan(self):
         timeout = self._state.settings.mdns_timeout
-        self.scan_btn.config(state="disabled")
-        self.resolve_btn.config(state="disabled")
-        self.export_btn.config(state="disabled")
-        self.copy_btn.config(state="disabled")
-        self.status.config(text=f"Scanning for mDNS devices... ({timeout}s)", fg="#ffaa00")
+        self.scan_btn.configure(state="disabled")
+        self.resolve_btn.configure(state="disabled")
+        self.export_btn.configure(state="disabled")
+        self.copy_btn.configure(state="disabled")
+        self.status.configure(
+            text=f"Scanning for mDNS devices... ({timeout}s)",
+            text_color=theme.WARNING)
         for row in self._tree.get_children():
             self._tree.delete(row)
         self._results = []
-        self._detail.config(text="")
+        self._detail.configure(text="")
         self._progress.start(10)
         threading.Thread(target=self._run_scan, daemon=True).start()
 
@@ -174,13 +179,13 @@ class MdnsTab:
         self._results = devices
         self._apply_filter()
         count = len(devices)
-        self.status.config(
+        self.status.configure(
             text=f"✅ Found {count} mDNS device{'s' if count != 1 else ''}",
-            fg="#00ff88" if count > 0 else "#ff4757")
-        self.scan_btn.config(state="normal")
-        self.resolve_btn.config(state="normal")
-        self.export_btn.config(state="normal")
-        self.copy_btn.config(state="normal")
+            text_color=theme.SUCCESS if count > 0 else theme.ERROR)
+        self.scan_btn.configure(state="normal")
+        self.resolve_btn.configure(state="normal")
+        self.export_btn.configure(state="normal")
+        self.copy_btn.configure(state="normal")
         if devices:
             self._state.session.add_mdns_scan(devices)
 
@@ -204,10 +209,10 @@ class MdnsTab:
     def _toggle_view(self):
         if self._view_mode == "simple":
             self._view_mode = "full"
-            self.toggle_btn.config(text="Simple View")
+            self.toggle_btn.configure(text="Simple View")
         else:
             self._view_mode = "simple"
-            self.toggle_btn.config(text="Full View")
+            self.toggle_btn.configure(text="Full View")
         self._apply_filter()
 
     def _on_select(self, _event):
@@ -215,14 +220,15 @@ class MdnsTab:
         if sel:
             tags = self._tree.item(sel[0], "tags")
             if tags:
-                self._detail.config(text=f"Raw: {tags[0]}")
+                self._detail.configure(text=f"Raw: {tags[0]}")
 
     # ── IP resolve ────────────────────────────────────────────────────────────
 
     def _start_resolve(self):
-        self.resolve_btn.config(state="disabled")
-        self.scan_btn.config(state="disabled")
-        self.status.config(text="Sending IP resolve request... (45s)", fg="#ffaa00")
+        self.resolve_btn.configure(state="disabled")
+        self.scan_btn.configure(state="disabled")
+        self.status.configure(
+            text="Sending IP resolve request... (45s)", text_color=theme.WARNING)
         threading.Thread(target=self._run_resolve, daemon=True).start()
 
     def _run_resolve(self):
@@ -235,9 +241,9 @@ class MdnsTab:
     def _finish_resolve(self, updated):
         self._results = updated
         self._apply_filter()
-        self.resolve_btn.config(state="normal")
-        self.scan_btn.config(state="normal")
-        self.status.config(text="✅ IP resolve complete", fg="#00ff88")
+        self.resolve_btn.configure(state="normal")
+        self.scan_btn.configure(state="normal")
+        self.status.configure(text="✅ IP resolve complete", text_color=theme.SUCCESS)
 
     # ── Copy / export ─────────────────────────────────────────────────────────
 
@@ -251,7 +257,7 @@ class MdnsTab:
             lines.append(f"{d.get('friendly','')}\t{d.get('type','')}\t{d.get('ip','')}")
         self._root.clipboard_clear()
         self._root.clipboard_append("\n".join(lines))
-        self.status.config(text="📋 Copied to clipboard!", fg="#00d4ff")
+        self.status.configure(text="📋 Copied to clipboard!", text_color=theme.ACCENT)
 
     def _export_csv(self):
         if not self._results:
@@ -272,5 +278,6 @@ class MdnsTab:
             for d in self._results:
                 writer.writerow([d.get("friendly",""), d.get("type",""),
                                   d.get("ip",""),      d.get("raw","")])
-        self.status.config(
-            text=f"✅ Exported to {os.path.basename(filepath)}", fg="#00ff88")
+        self.status.configure(
+            text=f"✅ Exported to {os.path.basename(filepath)}",
+            text_color=theme.SUCCESS)
