@@ -2,6 +2,7 @@
 ![Version](https://img.shields.io/badge/version-v1.1-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS-green)
+[![Website](https://img.shields.io/badge/website-pinetworktools.com-blue)](https://pinetworktools.com)
 
 A lightweight portable Windows tool that identifies which switch port your machine is connected to using LLDP and CDP network discovery protocols, and discovers mDNS/Bonjour devices on the local network. Built for field technicians who need quick port identification without complex network tools.
 
@@ -31,6 +32,8 @@ A lightweight portable Windows tool that identifies which switch port your machi
 ---
 
 ## 📦 Download
+
+Visit **[pinetworktools.com](https://pinetworktools.com)** for more info, screenshots and feature overview.
 
 Head to the [Releases](../../releases) page and download the latest `pint.exe`
 
