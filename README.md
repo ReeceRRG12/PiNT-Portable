@@ -10,24 +10,24 @@ A lightweight portable Windows tool that identifies which switch port your machi
 
 ## 🚀 Features
 
-- **Live LLDP & CDP capture** — detects both protocols simultaneously
-- **Auto protocol detection** — works with Cisco (CDP) and all other vendors (LLDP)
-- **Multi-vendor LLDP support** — tested with TP-Link, Ruckus, UniFi and more
-- **Port ID card layout** — Switch, Port, Protocol, Model, IP and VLAN displayed as live info cards
-- **Network adapter picker** — detects all interfaces on launch, lets you choose the right one with a recommended highlight; remembers selection for the session
-- **Quick Launch buttons** — once a management IP is found, one-click SSH and Telnet via PuTTY, or open HTTP/HTTPS in your browser
-- **Port Monitor tab** — displays negotiated link speed and duplex; tracks dropped and errored packets since monitoring started for basic cable-test feedback
-- **mDNS / Bonjour browser** — discovers devices broadcasting on the local network
-- **Simple / Full view toggle** — clean view for quick reference, full view for Bonjour gateway config
-- **Active IP resolution** — sends mDNS queries to resolve device IPs
-- **Extended IP & DHCP tab** — full adapter detail including DHCP server, scope options and lease info
-- **Colour-coded DHCP options** — flags standard, notable and unknown scope options at a glance
-- **Session-scoped export to XLS** — accumulate results across multiple scans and export as a single styled Excel file
-- **Export to CSV** — save mDNS scan results for reporting
-- **Copy to clipboard** — paste results directly into Teams or email
-- **Scalable UI** — auto-detects screen resolution on startup and scales fonts, icons and layout accordingly; resizable window with 900×640 minimum
+- **Live LLDP & CDP capture:** detects both protocols simultaneously
+- **Auto protocol detection:** works with Cisco (CDP) and all other vendors (LLDP)
+- **Multi-vendor LLDP support:** tested with TP-Link, Ruckus, UniFi and more
+- **Port ID card layout:** Switch, Port, Protocol, Model, IP and VLAN displayed as live info cards
+- **Network adapter picker:** detects all interfaces on launch, lets you choose the right one with a recommended highlight; remembers selection for the session
+- **Quick Launch buttons:** once a management IP is found, one-click SSH and Telnet via PuTTY, or open HTTP/HTTPS in your browser
+- **Port Monitor tab:** displays negotiated link speed and duplex; tracks dropped and errored packets since monitoring started for basic cable-test feedback
+- **mDNS / Bonjour browser:** discovers devices broadcasting on the local network
+- **Simple / Full view toggle:** clean view for quick reference, full view for Bonjour gateway config
+- **Active IP resolution:** sends mDNS queries to resolve device IPs
+- **Extended IP & DHCP tab:** full adapter detail including DHCP server, scope options and lease info
+- **Colour-coded DHCP options:** flags standard, notable and unknown scope options at a glance
+- **Session-scoped export to XLS:** accumulate results across multiple scans and export as a single styled Excel file
+- **Export to CSV:** save mDNS scan results for reporting
+- **Copy to clipboard:** paste results directly into Teams or email
+- **Scalable UI:** auto-detects screen resolution on startup and scales fonts, icons and layout accordingly; resizable window with 900x640 minimum
 - **Auto-installs Npcap** if not already present
-- **Single .exe** — no install required, just run it
+- **Single .exe:** no install required, just run it
 
 ---
 
@@ -47,7 +47,7 @@ No Python required. Just download and run.
 - Admin rights (required for packet capture)
 - Npcap (auto-installed on first run)
 - A wired ethernet connection to a managed switch
-- PuTTY (optional — required for SSH/Telnet quick launch buttons)
+- PuTTY (optional, required for SSH/Telnet quick launch buttons)
 
 ---
 
@@ -92,7 +92,7 @@ PiNT-Portable/
 
 | Version | Description |
 |---------|-------------|
-| v0.1    | Initial release — LLDP support |
+| v0.1    | Initial release, LLDP support |
 | v0.2    | Added CDP support, refactored codebase |
 | v0.3    | mDNS / Bonjour browser tab |
 | v0.3.1  | CSV export, IP resolve button, Simple/Full view toggle |
@@ -105,7 +105,7 @@ PiNT-Portable/
 | v0.6    | GUI refactored into gui/ package; network adapter picker; quick launch SSH/Telnet/HTTP/HTTPS |
 | v0.7    | Port Monitor tab: link speed/duplex, dropped packet counter; EXE publisher metadata; Change adapter button fix |
 | v1.0    | Full GUI overhaul: sidebar navigation, branded in-app logo, progress bars on scans, Settings panel, About panel, larger window |
-| **v1.1**| **Current** — CustomTkinter migration: resizable window, auto-scaling UI, dark themed components, Port ID card grid, polished monitor and about panels |
+| **v1.1**| **Current** - CustomTkinter migration: resizable window, auto-scaling UI, dark themed components, Port ID card grid, polished monitor and about panels |
 | Future  | Integrated iPerf3 tester |
 | Future  | macOS support |
 
@@ -124,22 +124,22 @@ PiNT-Portable/
 
 ## 📋 Roadmap
 
-- [x] **v0.1** — LLDP support
-- [x] **v0.2** — CDP support
-- [x] **v0.3** — mDNS tab with Bonjour-style browser
-- [x] **v0.3.1** — CSV export, IP resolve button, Simple/Full view toggle
-- [x] **v0.3.2** — Windows mDNS service discovery fix, About dialog
-- [x] **v0.4** — Extended IP & DHCP tab with colour-coded scope options
-- [x] **v0.5** — Session-scoped XLS export with Port Scans, IP Snapshots and mDNS sheets
-- [x] **v0.5.1** — Improved About dialog with clickable email and GitHub links
-- [x] **v0.5.2** — Multi-vendor LLDP parser rework — proper TLV parsing for Ruckus, UniFi, TP-Link and any IEEE 802.1AB compliant switch
-- [x] **v0.5.3** — XLS column auto-fit, tab descriptions added for each tab
-- [x] **v0.6** — GUI refactored into `gui/` package (one file per tab); network adapter picker on launch with recommended highlighting; quick launch buttons for SSH/Telnet (PuTTY) and HTTP/HTTPS once a management IP is detected
-- [x] **v0.7** — Port Monitor tab: negotiated link speed and duplex, live dropped/errored packet counter (basic cable-test feedback); EXE publisher metadata (Pi Network Tools); Change adapter button now always shows the picker
-- [x] **v1.0** — Full GUI overhaul: sidebar navigation replaces tab bar; branded in-app logo with aspect-ratio scaling; animated progress bars on Port ID and mDNS scans; Settings panel for scan timeouts and monitor poll interval; About panel inline; larger 1380×960 window
-- [x] **v1.1** — CustomTkinter migration: auto-scaling UI based on screen resolution; resizable window (min 900×640); Port ID tab redesigned with live info card grid; dark-themed Treeview and scrollbars; centralised theme and scale manager modules; polished Monitor, About and sidebar panels throughout
-- [ ] **Future** — Integrated iPerf3 tester
-- [ ] **Future** — macOS support
+- [x] **v0.1** - LLDP support
+- [x] **v0.2** - CDP support
+- [x] **v0.3** - mDNS tab with Bonjour-style browser
+- [x] **v0.3.1** - CSV export, IP resolve button, Simple/Full view toggle
+- [x] **v0.3.2** - Windows mDNS service discovery fix, About dialog
+- [x] **v0.4** - Extended IP & DHCP tab with colour-coded scope options
+- [x] **v0.5** - Session-scoped XLS export with Port Scans, IP Snapshots and mDNS sheets
+- [x] **v0.5.1** - Improved About dialog with clickable email and GitHub links
+- [x] **v0.5.2** - Multi-vendor LLDP parser rework with proper TLV parsing for Ruckus, UniFi, TP-Link and any IEEE 802.1AB compliant switch
+- [x] **v0.5.3** - XLS column auto-fit, tab descriptions added for each tab
+- [x] **v0.6** - GUI refactored into `gui/` package (one file per tab); network adapter picker on launch with recommended highlighting; quick launch buttons for SSH/Telnet (PuTTY) and HTTP/HTTPS once a management IP is detected
+- [x] **v0.7** - Port Monitor tab: negotiated link speed and duplex, live dropped/errored packet counter (basic cable-test feedback); EXE publisher metadata (Pi Network Tools); Change adapter button now always shows the picker
+- [x] **v1.0** - Full GUI overhaul: sidebar navigation replaces tab bar; branded in-app logo with aspect-ratio scaling; animated progress bars on Port ID and mDNS scans; Settings panel for scan timeouts and monitor poll interval; About panel inline; larger 1380x960 window
+- [x] **v1.1** - CustomTkinter migration: auto-scaling UI based on screen resolution; resizable window (min 900x640); Port ID tab redesigned with live info card grid; dark-themed Treeview and scrollbars; centralised theme and scale manager modules; polished Monitor, About and sidebar panels throughout
+- [ ] **Future** - Integrated iPerf3 tester
+- [ ] **Future** - macOS support
 
 ---
 
@@ -149,7 +149,7 @@ Got questions or feedback? Reach out at **reece@pinetworktools.com**
 
 ---
 
-*Built as a Python learning project — vibe coded with Claude* 🍺
+*Built as a Python learning project, vibe coded with Claude* 🍺
 
 
-*Fully open source — built with ❤️ for the networking community*
+*Fully open source, built with ❤️ for the networking community*
