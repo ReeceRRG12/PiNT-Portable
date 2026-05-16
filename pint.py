@@ -13,6 +13,9 @@ from gui.ip_tab       import IpTab
 from gui.export_tab   import ExportTab
 from gui.monitor_tab  import MonitorTab
 from gui.settings_tab import SettingsTab
+from gui.arp_tab      import ArpTab
+from gui.portscan_tab import PortScanTab
+from gui.snmp_tab     import SnmpTab
 
 
 _BG      = "#1a1a2e"
@@ -44,8 +47,22 @@ def _load_icon(filename, size=20):
     try:
         from PIL import Image
         path = os.path.join(_base_path(), "icons", filename)
-        img = Image.open(path).convert("RGBA").resize((size, size), Image.LANCZOS)
-        return ctk.CTkImage(light_image=img, dark_image=img, size=(size, size))
+        img  = Image.open(path).convert("RGBA")
+        # Crop transparent padding
+        bbox = img.split()[3].getbbox()
+        if bbox:
+            img = img.crop(bbox)
+        # Resize maintaining aspect ratio, then center on a square canvas
+        img.thumbnail((size, size), Image.LANCZOS)
+        canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        x = (size - img.width)  // 2
+        y = (size - img.height) // 2
+        canvas.paste(img, (x, y))
+        _, _, _, a = canvas.split()
+        # Fill solid cyan using the icon's alpha as the mask
+        cyan = Image.new("RGBA", (size, size), (0, 212, 255, 255))
+        cyan.putalpha(a)
+        return ctk.CTkImage(light_image=cyan, dark_image=cyan, size=(size, size))
     except Exception:
         return None
 
@@ -78,6 +95,9 @@ class PiNTApp:
             "export":   _load_icon("Export.png"),
             "settings": _load_icon("settings.png"),
             "about":    _load_icon("About.png"),
+            "arp":      _load_icon("ARP.png"),
+            "portscan": _load_icon("PortScanner.png"),
+            "snmp":     _load_icon("SNMP.png"),
         }
 
         self._nav_buttons  = {}
@@ -104,11 +124,14 @@ class PiNTApp:
         ctk.CTkFrame(sidebar, fg_color="#0f3460", height=2, corner_radius=0).pack(fill="x", padx=12, pady=(4, 8))
 
         for key, icon_key, label in [
-            ("port",    "port",    "Port ID"),
-            ("mdns",    "mdns",    "mDNS"),
-            ("ip",      "ip",      "IP Info"),
-            ("monitor", "monitor", "Monitor"),
-            ("export",  "export",  "Export"),
+            ("port",     "port",     "Port ID"),
+            ("mdns",     "mdns",     "mDNS"),
+            ("ip",       "ip",       "IP Info"),
+            ("monitor",  "monitor",  "Monitor"),
+            ("arp",      "arp",      "ARP Scanner"),
+            ("portscan", "portscan", "Port Scanner"),
+            ("snmp",     "snmp",     "SNMP Query"),
+            ("export",   "export",   "Export"),
         ]:
             self._nav_btn(sidebar, key, self._icons[icon_key], label)
 
@@ -213,6 +236,9 @@ class PiNTApp:
         MdnsTab(_panel("mdns"), self.root, self._state)
         IpTab(_panel("ip"), self.root, self._state)
         MonitorTab(_panel("monitor"), self.root, self._state)
+        ArpTab(_panel("arp"), self.root, self._state)
+        PortScanTab(_panel("portscan"), self.root, self._state)
+        SnmpTab(_panel("snmp"), self.root, self._state)
         self._export_tab = ExportTab(_panel("export"), self.root, self._state)
         SettingsTab(_panel("settings"), self.root, self._state)
         self._build_about_panel(_panel("about"))

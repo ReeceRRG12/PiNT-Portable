@@ -1,12 +1,12 @@
 # Pi Network Tools - PiNT Desktop 🍺 
 (formally PiNT-Portable & Port Identifier) 
 
-![Version](https://img.shields.io/badge/version-v1.1-blue)
+![Version](https://img.shields.io/badge/version-v1.2-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
-![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS-green)
+![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS%20%7C%20ARP%20%7C%20SNMP-green)
 [![Website](https://img.shields.io/badge/website-pinetworktools.com-blue)](https://pinetworktools.com)
 
-A lightweight portable Windows tool that identifies which switch port your machine is connected to using LLDP and CDP network discovery protocols, and discovers mDNS/Bonjour devices on the local network. Built for field technicians who need quick port identification without complex network tools.
+A lightweight portable Windows tool for field technicians. Identifies which switch port your machine is connected to using LLDP and CDP, discovers mDNS/Bonjour devices, sweeps the local subnet with ARP, scans hosts for open ports, and queries SNMP-enabled devices — all without complex network tools.
 
 ---
 
@@ -24,6 +24,9 @@ A lightweight portable Windows tool that identifies which switch port your machi
 - **Active IP resolution:** sends mDNS queries to resolve device IPs
 - **Extended IP & DHCP tab:** full adapter detail including DHCP server, scope options and lease info
 - **Colour-coded DHCP options:** flags standard, notable and unknown scope options at a glance
+- **ARP Scanner:** sweeps the local subnet with ARP to discover all active devices; shows IP, MAC and hostname; auto-detects subnet from selected adapter
+- **Port Scanner:** TCP connect-scan any host with presets (Top 20, Top 100, Web) or a custom port range; shows open ports with service name hints and a live progress bar
+- **SNMP Query:** GET or WALK any SNMP v1/v2c device using a community string; includes common OID presets for system info, interfaces, ARP table, routing table and LLDP remote table; no external dependencies
 - **Session-scoped export to XLS:** accumulate results across multiple scans and export as a single styled Excel file
 - **Export to CSV:** save mDNS scan results for reporting
 - **Copy to clipboard:** paste results directly into Teams or email
@@ -63,6 +66,9 @@ PiNT-Portable/
 ├── lldp_parser.py        # LLDP protocol parser
 ├── cdp_parser.py         # CDP protocol parser
 ├── ip_info.py            # IP & DHCP information gathering
+├── arp_scanner.py        # ARP subnet sweep
+├── port_scanner.py       # TCP connect port scanner
+├── snmp_query.py         # SNMP v1/v2c GET & WALK (raw UDP, no dependencies)
 ├── session.py            # Session state manager
 ├── exporter.py           # XLS export logic
 ├── logo.png              # Taskbar / window icon
@@ -74,7 +80,10 @@ PiNT-Portable/
 │   ├── Monitor.png
 │   ├── Export.png
 │   ├── settings.png
-│   └── About.png
+│   ├── About.png
+│   ├── ARP.png
+│   ├── PortScanner.png
+│   └── SNMP.png
 └── gui/
     ├── __init__.py
     ├── theme.py              # Centralised colours, fonts and ttk dark styling
@@ -84,6 +93,9 @@ PiNT-Portable/
     ├── mdns_tab.py           # mDNS browser tab
     ├── ip_tab.py             # IP Info & DHCP tab
     ├── monitor_tab.py        # Port Monitor tab (link speed, packet drops)
+    ├── arp_tab.py            # ARP Scanner tab
+    ├── portscan_tab.py       # Port Scanner tab
+    ├── snmp_tab.py           # SNMP Query tab
     ├── export_tab.py         # Session export tab
     └── settings_tab.py       # Settings panel
 ```
@@ -107,7 +119,8 @@ PiNT-Portable/
 | v0.6    | GUI refactored into gui/ package; network adapter picker; quick launch SSH/Telnet/HTTP/HTTPS |
 | v0.7    | Port Monitor tab: link speed/duplex, dropped packet counter; EXE publisher metadata; Change adapter button fix |
 | v1.0    | Full GUI overhaul: sidebar navigation, branded in-app logo, progress bars on scans, Settings panel, About panel, larger window |
-| **v1.1**| **Current** - CustomTkinter migration: resizable window, auto-scaling UI, dark themed components, Port ID card grid, polished monitor and about panels |
+| v1.1    | CustomTkinter migration: resizable window, auto-scaling UI, dark themed components, Port ID card grid, polished monitor and about panels |
+| **v1.2**| **Current** - ARP Scanner, Port Scanner and SNMP Query tabs; dependency-free SNMP v1/v2c engine; unified cyan icon tinting |
 | Future  | Integrated iPerf3 tester |
 | Future  | macOS support |
 
@@ -140,6 +153,7 @@ PiNT-Portable/
 - [x] **v0.7** - Port Monitor tab: negotiated link speed and duplex, live dropped/errored packet counter (basic cable-test feedback); EXE publisher metadata (Pi Network Tools); Change adapter button now always shows the picker
 - [x] **v1.0** - Full GUI overhaul: sidebar navigation replaces tab bar; branded in-app logo with aspect-ratio scaling; animated progress bars on Port ID and mDNS scans; Settings panel for scan timeouts and monitor poll interval; About panel inline; larger 1380x960 window
 - [x] **v1.1** - CustomTkinter migration: auto-scaling UI based on screen resolution; resizable window (min 900x640); Port ID tab redesigned with live info card grid; dark-themed Treeview and scrollbars; centralised theme and scale manager modules; polished Monitor, About and sidebar panels throughout
+- [x] **v1.2** - ARP Scanner tab (subnet sweep, IP/MAC/hostname); Port Scanner tab (TCP connect scan with Top 20/100/Web presets and custom range); SNMP Query tab (GET and WALK, v1/v2c, dependency-free raw UDP implementation); unified cyan icon tinting across all sidebar icons
 - [ ] **Future** - Integrated iPerf3 tester
 - [ ] **Future** - macOS support
 
