@@ -6,7 +6,7 @@
 ![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS%20%7C%20ARP%20%7C%20SNMP-green)
 [![Website](https://img.shields.io/badge/website-pinetworktools.com-blue)](https://pinetworktools.com)
 
-A lightweight portable Windows tool for field technicians. Identifies which switch port your machine is connected to using LLDP and CDP, discovers mDNS/Bonjour devices, sweeps the local subnet with ARP, scans hosts for open ports, and queries SNMP-enabled devices — all without complex network tools.
+A lightweight portable Windows tool for field technicians. Identifies which switch port your machine is connected to using LLDP and CDP, discovers mDNS/Bonjour devices, sweeps the local subnet with ARP, scans hosts for open ports, and queries SNMP-enabled devices. No complex network tools required.
 
 ---
 
