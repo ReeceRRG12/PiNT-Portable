@@ -61,17 +61,13 @@ No Python required. Just download and run.
 ```
 PiNT-Portable/
 ├── pint.py               # Main application entry point & orchestrator
-├── scanner.py            # Packet capture logic (LLDP/CDP)
-├── mdns_scanner.py       # mDNS discovery & IP resolution
-├── lldp_parser.py        # LLDP protocol parser
-├── cdp_parser.py         # CDP protocol parser
-├── ip_info.py            # IP & DHCP information gathering
-├── arp_scanner.py        # ARP subnet sweep
-├── port_scanner.py       # TCP connect port scanner
-├── snmp_query.py         # SNMP v1/v2c GET & WALK (raw UDP, no dependencies)
-├── session.py            # Session state manager
-├── exporter.py           # XLS export logic
+├── pint.spec             # PyInstaller build spec
+├── session.py            # Session state manager (cross-cutting)
+├── exporter.py           # XLS export logic (cross-cutting)
+├── version_info.txt      # Windows EXE version metadata
+├── requirements.txt
 ├── logo.png              # Taskbar / window icon
+├── logo.ico
 ├── PiNT_InAppLogo.png    # Branded in-app sidebar logo
 ├── icons/                # Sidebar navigation icons (PNG, 24x24)
 │   ├── PortID.png
@@ -84,9 +80,20 @@ PiNT-Portable/
 │   ├── ARP.png
 │   ├── PortScanner.png
 │   └── SNMP.png
-└── gui/
+├── network/              # Network scanners, parsers and queries
+│   ├── __init__.py
+│   ├── scanner.py            # LLDP/CDP packet capture
+│   ├── lldp_parser.py        # LLDP protocol parser
+│   ├── cdp_parser.py         # CDP protocol parser
+│   ├── mdns_scanner.py       # mDNS / Bonjour discovery & IP resolution
+│   ├── arp_scanner.py        # ARP subnet sweep
+│   ├── port_scanner.py       # TCP connect port scanner
+│   ├── snmp_query.py         # SNMP v1/v2c GET & WALK (raw UDP, no dependencies)
+│   └── ip_info.py            # IP & DHCP information gathering
+└── gui/                  # GUI panels and shared widget helpers
     ├── __init__.py
     ├── theme.py              # Centralised colours, fonts and ttk dark styling
+    ├── widgets.py            # Shared widget helpers (description, buttons, progress bar, results tree, copy)
     ├── scale_manager.py      # Screen resolution detection and CTk scaling
     ├── interface_picker.py   # Network adapter selection dialog
     ├── port_tab.py           # Port ID tab (LLDP/CDP + card grid + quick launch)
