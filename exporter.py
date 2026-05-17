@@ -242,6 +242,40 @@ def export_xlsx(session, filepath):
     wb.save(filepath)
 
 
+def export_arp_xlsx(results, filepath):
+    """
+    Export an ARP scan result list to .xlsx in the flat schema PiNT Live's
+    "Load ARP List…" sidebar expects: one sheet, headers on row 1, one row
+    per (IP, MAC) pair, plus IP Address / MAC Address / Hostname columns.
+
+    *results* is a list of {"ip", "mac", "hostname"} dicts (the same shape
+    `network.arp_scanner.scan_arp` produces). Rows missing a MAC are
+    dropped; hostnames stay blank if unknown (no "unknown" / "N/A" filler).
+    """
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "ARP"
+    ws.sheet_view.showGridLines = False
+    _tab_colour(ws, C_HEADER_FG)
+
+    headers = ["IP Address", "MAC Address", "Hostname"]
+    _apply_header_row(ws, 1, headers)
+    _freeze(ws)
+
+    row = 2
+    for d in results:
+        mac = (d.get("mac") or "").strip()
+        if not mac:
+            continue
+        ip       = (d.get("ip") or "").strip()
+        hostname = (d.get("hostname") or "").strip()
+        _apply_data_row(ws, row, [ip, mac, hostname])
+        row += 1
+
+    _autofit_columns(ws)
+    wb.save(filepath)
+
+
 def export_csv(session, filepath):
     """
     Export Port Scans only to a flat .csv file.

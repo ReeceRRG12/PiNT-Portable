@@ -260,7 +260,7 @@ class PiNTApp:
                      fg_color="transparent", text_color=theme.ACCENT,
                      font=ctk.CTkFont("Arial", 16, weight="bold")).pack()
 
-        ctk.CTkLabel(frame, text="Version v1.3",
+        ctk.CTkLabel(frame, text="Version v1.4",
                      fg_color="transparent", text_color=theme.FG_DIM,
                      font=ctk.CTkFont("Arial", 12)).pack(pady=(3, 0))
 

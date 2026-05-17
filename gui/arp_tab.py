@@ -1,5 +1,8 @@
 import tkinter as tk
 import threading
+import os
+from datetime import datetime
+from tkinter import filedialog
 
 import customtkinter as ctk
 from gui import theme, widgets
@@ -83,6 +86,10 @@ class ArpTab:
             bottom, "Copy", self._copy, state="disabled")
         self._copy_btn.pack(side="right", padx=(5, 0))
 
+        self._export_btn = widgets.secondary_button(
+            bottom, "Export XLSX", self._export, width=90, state="disabled")
+        self._export_btn.pack(side="right", padx=(5, 0))
+
         self._tree.bind("<<TreeviewSelect>>", self._on_select)
 
     # ── Helpers ───────────────────────────────────────────────────────────────
@@ -111,6 +118,7 @@ class ArpTab:
 
         self._scan_btn.configure(state="disabled")
         self._copy_btn.configure(state="disabled")
+        self._export_btn.configure(state="disabled")
         self._status.configure(
             text=f"Scanning {network}...", text_color=theme.WARNING)
         for row in self._tree.get_children():
@@ -144,6 +152,9 @@ class ArpTab:
         self._scan_btn.configure(state="normal")
         if results:
             self._copy_btn.configure(state="normal")
+            self._export_btn.configure(state="normal")
+        else:
+            self._export_btn.configure(state="disabled")
 
     # ── Events ────────────────────────────────────────────────────────────────
 
@@ -161,3 +172,33 @@ class ArpTab:
         for d in self._results:
             lines.append(f"{d['ip']}\t{d['mac']}\t{d['hostname']}")
         widgets.copy_to_clipboard(self._root, "\n".join(lines), self._status)
+
+    def _export(self):
+        if not self._results:
+            return
+
+        # Derive a filename-safe "<site>" hint from the subnet so the user
+        # gets a meaningful default they can rename in the save dialog.
+        subnet = self._subnet_var.get().strip()
+        site = "".join(c if c.isalnum() else "_" for c in subnet).strip("_") or "scan"
+        date = datetime.now().strftime("%Y%m%d")
+        default_name = f"arp_export_{site}_{date}.xlsx"
+
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".xlsx",
+            filetypes=[("Excel files", "*.xlsx")],
+            initialfile=default_name,
+            title="Export ARP table to XLSX",
+        )
+        if not filepath:
+            return
+
+        try:
+            from exporter import export_arp_xlsx
+            export_arp_xlsx(self._results, filepath)
+            self._status.configure(
+                text=f"✅ Saved {os.path.basename(filepath)}",
+                text_color=theme.SUCCESS)
+        except Exception as e:
+            self._status.configure(
+                text=f"❌ Export failed: {e}", text_color=theme.ERROR)

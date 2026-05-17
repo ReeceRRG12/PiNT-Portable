@@ -1,7 +1,7 @@
 # Pi Network Tools - PiNT Desktop 🍺 
 (formally PiNT-Portable & Port Identifier) 
 
-![Version](https://img.shields.io/badge/version-v1.3-blue)
+![Version](https://img.shields.io/badge/version-v1.4-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS%20%7C%20ARP%20%7C%20SNMP-green)
 [![Website](https://img.shields.io/badge/website-pinetworktools.com-blue)](https://pinetworktools.com)
@@ -24,7 +24,7 @@ A lightweight portable Windows tool for field technicians. Identifies which swit
 - **Active IP resolution:** sends mDNS queries to resolve device IPs
 - **Extended IP & DHCP tab:** full adapter detail including DHCP server, scope options and lease info
 - **Colour-coded DHCP options:** flags standard, notable and unknown scope options at a glance
-- **ARP Scanner:** sweeps the local subnet with ARP to discover all active devices; shows IP, MAC and hostname; auto-detects subnet from selected adapter
+- **ARP Scanner:** sweeps the local subnet with ARP to discover all active devices; shows IP, MAC and hostname; auto-detects subnet from selected adapter; one-click XLSX export for loading into PiNT Live
 - **Port Scanner:** TCP connect-scan any host with presets (Top 20, Top 100, Web) or a custom port range; shows open ports with service name hints and a live progress bar
 - **SNMP Query:** GET or WALK any SNMP v1/v2c device using a community string; includes common OID presets for system info, interfaces, ARP table, routing table and LLDP remote table; no external dependencies
 - **Session-scoped export to XLS:** accumulate results across multiple scans and export as a single styled Excel file
@@ -128,7 +128,8 @@ PiNT-Portable/
 | v1.0    | Full GUI overhaul: sidebar navigation, branded in-app logo, progress bars on scans, Settings panel, About panel, larger window |
 | v1.1    | CustomTkinter migration: resizable window, auto-scaling UI, dark themed components, Port ID card grid, polished monitor and about panels |
 | v1.2    | ARP Scanner, Port Scanner and SNMP Query tabs; dependency-free SNMP v1/v2c engine; unified cyan icon tinting |
-| **v1.3**| **Current** - Internal code refactor: centralised theme tokens, shared widget helpers in `gui/widgets.py`, scanners grouped into a `network/` package |
+| v1.3    | Internal code refactor: centralised theme tokens, shared widget helpers in `gui/widgets.py`, scanners grouped into a `network/` package |
+| **v1.4**| **Current** - ARP tab XLSX export for PiNT Live: flat IP / MAC / Hostname workbook in the schema PiNT Live's *Load ARP List…* sidebar consumes |
 | Future  | Integrated iPerf3 tester |
 | Future  | macOS support |
 
@@ -163,6 +164,7 @@ PiNT-Portable/
 - [x] **v1.1** - CustomTkinter migration: auto-scaling UI based on screen resolution; resizable window (min 900x640); Port ID tab redesigned with live info card grid; dark-themed Treeview and scrollbars; centralised theme and scale manager modules; polished Monitor, About and sidebar panels throughout
 - [x] **v1.2** - ARP Scanner tab (subnet sweep, IP/MAC/hostname); Port Scanner tab (TCP connect scan with Top 20/100/Web presets and custom range); SNMP Query tab (GET and WALK, v1/v2c, dependency-free raw UDP implementation); unified cyan icon tinting across all sidebar icons
 - [x] **v1.3** - Internal code refactor for maintainability: every hardcoded colour pulled into `gui/theme.py`; new `gui/widgets.py` with shared helpers (`description`, `primary_button`, `secondary_button`, `scan_progressbar`, `results_tree`, `copy_to_clipboard`) collapsing ~280 lines of per-tab boilerplate; all 8 scanner/parser/query modules grouped into a `network/` package
+- [x] **v1.4** - ARP tab gains a one-click XLSX export: flat single-sheet workbook with `IP Address`, `MAC Address` and `Hostname` columns, ready to drop into PiNT Live's *Load ARP List…* sidebar to enrich per-switch port documentation; default filename derived from the scanned subnet and date
 - [ ] **Future** - Integrated iPerf3 tester
 - [ ] **Future** - macOS support
 
