@@ -8,6 +8,7 @@ def _scale() -> float:
 
 
 # ── Colours ───────────────────────────────────────────────────────────────────
+# Base palette
 BG      = "#1a1a2e"
 SIDEBAR = "#16213e"
 ACCENT  = "#00d4ff"
@@ -16,9 +17,21 @@ DIVIDER = "#0f3460"
 FG      = "#eeeeee"
 FG_DIM  = "#888888"
 FG_HINT = "#555555"
+FG_MUTED = "#aaaaaa"
+FG_LABEL = "#666666"
 WARNING = "#ffaa00"
 SUCCESS = "#00ff88"
 ERROR   = "#ff4757"
+
+# Interaction states
+ACCENT_HOVER = "#00b8d9"  # darker cyan — hover on primary (scan) buttons
+PANEL_HOVER  = "#1f2d45"  # subtle highlight — hover on secondary buttons / dropdowns
+NAV_BG       = "#111d2e"  # sidebar nav button background (inactive)
+NAV_ACTIVE   = "#1a3050"  # sidebar nav button background (selected)
+SELECT       = "#1f3a5c"  # Treeview row selection
+
+# Accent as an RGB tuple (for PIL image tinting where we can't pass a hex string)
+ACCENT_RGB = (0, 212, 255)
 
 NAV_W = 210  # sidebar width at scale 1.0
 
@@ -67,10 +80,18 @@ def apply_treeview_style(style: ttk.Style) -> None:
                     borderwidth=0,
                     font=tk_font(10, "bold"))
     style.map("PiNT.Treeview",
-              background=[("selected", "#1f3a5c")],
+              background=[("selected", SELECT)],
               foreground=[("selected", FG)])
     style.map("PiNT.Treeview.Heading",
-              background=[("active", "#1f2d45")])
+              background=[("active", PANEL_HOVER)])
+
+
+def apply_progressbar_style(style: ttk.Style) -> None:
+    """Cyan scan progress bar style — used by every tab's Scan.Horizontal.TProgressbar."""
+    style.configure("Scan.Horizontal.TProgressbar",
+                    troughcolor=PANEL, background=ACCENT,
+                    bordercolor=PANEL, lightcolor=ACCENT,
+                    darkcolor=ACCENT, thickness=6)
 
 
 def apply_scrollbar_style(style: ttk.Style) -> None:

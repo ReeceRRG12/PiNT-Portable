@@ -192,7 +192,7 @@ class InterfacePicker:
         ctk.CTkButton(btn_frame, text="Use Selected Interface",
                       command=_confirm,
                       fg_color=theme.ACCENT, text_color=theme.BG,
-                      hover_color="#00b8d9",
+                      hover_color=theme.ACCENT_HOVER,
                       font=theme.font(11, "bold"),
                       corner_radius=6, border_width=0,
                       width=200).pack(side="left", padx=5)
@@ -200,7 +200,7 @@ class InterfacePicker:
         ctk.CTkButton(btn_frame, text="Auto-detect",
                       command=win.destroy,
                       fg_color=theme.PANEL, text_color=theme.FG_DIM,
-                      hover_color="#1f2d45",
+                      hover_color=theme.PANEL_HOVER,
                       font=theme.font(10),
                       corner_radius=6, border_width=0,
                       width=110).pack(side="left", padx=5)

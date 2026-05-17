@@ -1,7 +1,7 @@
 import threading
 from scapy.all import sniff
-from lldp_parser import parse_lldp
-from cdp_parser import parse_cdp
+from network.lldp_parser import parse_lldp
+from network.cdp_parser import parse_cdp
 
 def scan(callback, timeout=30, iface=None):
     result = {}

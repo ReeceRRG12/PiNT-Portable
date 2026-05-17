@@ -1,10 +1,9 @@
-import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import filedialog
 import os
 from datetime import datetime
 
 import customtkinter as ctk
-from gui import theme
+from gui import theme, widgets
 
 
 class ExportTab:
@@ -19,68 +18,38 @@ class ExportTab:
         self._build(parent)
 
     def _build(self, parent):
-        _desc = tk.Label(parent,
-                         text="Accumulates results from all tabs during your session and exports them "
-                              "to a formatted Excel file.\n\n"
-                              "Run scans across multiple ports to build up a full picture before "
-                              "exporting — ideal for switch audits.",
-                         bg=theme.BG, fg=theme.FG_DIM,
-                         font=theme.tk_font(12),
-                         wraplength=600, justify="center")
-        _desc.pack(fill="x", padx=20, pady=(12, 8))
-        parent.bind("<Configure>", lambda e: _desc.configure(wraplength=max(100, e.width - 40)), add="+")
+        widgets.description(
+            parent,
+            "Accumulates results from all tabs during your session and exports them "
+            "to a formatted Excel file.\n\n"
+            "Run scans across multiple ports to build up a full picture before "
+            "exporting — ideal for switch audits.")
 
         header = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
         header.pack(fill="x", padx=10, pady=(0, 5))
 
-        self._status = ctk.CTkLabel(header, text="No data in session yet",
-                                    fg_color="transparent", text_color=theme.FG_DIM,
-                                    font=theme.font(10))
+        self._status = widgets.status_label(header, "No data in session yet")
         self._status.pack(side="left")
 
-        ctk.CTkButton(header, text="Clear Session",
-                      command=self._clear_session,
-                      fg_color=theme.PANEL, text_color=theme.ERROR,
-                      hover_color="#1f2d45",
-                      font=theme.font(9),
-                      corner_radius=6, border_width=0,
-                      width=110).pack(side="right")
+        widgets.secondary_button(
+            header, "Clear Session", self._clear_session,
+            width=110, text_color=theme.ERROR).pack(side="right")
 
         # ── Session tree ──────────────────────────────────────────────────────
-        tree_frame = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
+        self._tree, tree_frame = widgets.results_tree(parent, [
+            ("time",    "Timestamp", 140),
+            ("type",    "Type",       90),
+            ("summary", "Summary",   230),
+        ])
         tree_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
-
-        style = ttk.Style()
-        theme.apply_treeview_style(style)
-
-        self._tree = ttk.Treeview(tree_frame,
-                                   columns=("time", "type", "summary"),
-                                   show="headings",
-                                   style="PiNT.Treeview",
-                                   selectmode="browse")
-        self._tree.heading("time",    text="Timestamp")
-        self._tree.heading("type",    text="Type")
-        self._tree.heading("summary", text="Summary")
-        self._tree.column("time",    width=140)
-        self._tree.column("type",    width=90)
-        self._tree.column("summary", width=230)
-
-        sb = ttk.Scrollbar(tree_frame, orient="vertical", command=self._tree.yview)
-        self._tree.configure(yscrollcommand=sb.set)
-        self._tree.pack(side="left", fill="both", expand=True)
-        sb.pack(side="right", fill="y")
 
         # ── Export buttons ────────────────────────────────────────────────────
         btn_frame = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
         btn_frame.pack(fill="x", padx=10, pady=(0, 10))
 
-        self._export_btn = ctk.CTkButton(btn_frame, text="Export XLS",
-                                          command=self._do_export,
-                                          fg_color=theme.ACCENT, text_color=theme.BG,
-                                          hover_color="#00b8d9",
-                                          font=theme.font(11, "bold"),
-                                          corner_radius=6, border_width=0,
-                                          width=120, state="disabled")
+        self._export_btn = widgets.primary_button(
+            btn_frame, "Export XLS", self._do_export,
+            width=120, font=theme.font(11, "bold"), state="disabled")
         self._export_btn.pack(side="left", padx=(0, 5))
 
         self._result_label = ctk.CTkLabel(btn_frame, text="",

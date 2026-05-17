@@ -1,10 +1,9 @@
 import tkinter as tk
-from tkinter import ttk
 import threading
 
 import customtkinter as ctk
-from gui import theme
-from port_scanner import PRESET_LABELS, PRESET_PORTS
+from gui import theme, widgets
+from network.port_scanner import PRESET_LABELS, PRESET_PORTS
 
 
 class PortScanTab:
@@ -17,36 +16,20 @@ class PortScanTab:
         self._build(parent)
 
     def _build(self, parent):
-        _desc = tk.Label(
+        widgets.description(
             parent,
-            text="TCP connect-scan a host to discover open ports.\n\n"
-                 "Choose a preset or enter a custom port range. "
-                 "Results show each open port and its common service name.",
-            bg=theme.BG, fg=theme.FG_DIM,
-            font=theme.tk_font(12),
-            wraplength=600, justify="center")
-        _desc.pack(fill="x", padx=20, pady=(12, 8))
-        parent.bind("<Configure>",
-                    lambda e: _desc.configure(wraplength=max(100, e.width - 40)),
-                    add="+")
+            "TCP connect-scan a host to discover open ports.\n\n"
+            "Choose a preset or enter a custom port range. "
+            "Results show each open port and its common service name.")
 
         # ── Toolbar ───────────────────────────────────────────────────────────
         top = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
         top.pack(fill="x", padx=10, pady=(0, 2))
 
-        self._status = ctk.CTkLabel(
-            top, text="Enter a host and press Scan",
-            fg_color="transparent", text_color=theme.FG_DIM,
-            font=theme.font(10))
+        self._status = widgets.status_label(top, "Enter a host and press Scan")
         self._status.pack(side="left")
 
-        self._scan_btn = ctk.CTkButton(
-            top, text="Scan",
-            command=self._start_scan,
-            fg_color=theme.ACCENT, text_color=theme.BG,
-            hover_color="#00b8d9",
-            font=theme.font(10, "bold"),
-            corner_radius=6, border_width=0, width=80)
+        self._scan_btn = widgets.primary_button(top, "Scan", self._start_scan)
         self._scan_btn.pack(side="right")
 
         # ── Options row ───────────────────────────────────────────────────────
@@ -76,9 +59,9 @@ class PortScanTab:
             variable=self._preset_var,
             command=self._on_preset_change,
             fg_color=theme.PANEL, text_color=theme.FG,
-            button_color=theme.DIVIDER, button_hover_color="#1f2d45",
+            button_color=theme.DIVIDER, button_hover_color=theme.PANEL_HOVER,
             dropdown_fg_color=theme.PANEL, dropdown_text_color=theme.FG,
-            dropdown_hover_color="#1f2d45",
+            dropdown_hover_color=theme.PANEL_HOVER,
             font=theme.font(10), width=110)
         self._preset_menu.pack(side="left", padx=(5, 10))
 
@@ -115,38 +98,16 @@ class PortScanTab:
                      font=theme.font(10), width=44).pack(side="left", padx=5)
 
         # ── Progress bar (determinate) ────────────────────────────────────────
-        style = ttk.Style()
-        style.configure("Scan.Horizontal.TProgressbar",
-                        troughcolor=theme.PANEL, background=theme.ACCENT,
-                        bordercolor=theme.PANEL, lightcolor=theme.ACCENT,
-                        darkcolor=theme.ACCENT, thickness=6)
-        self._progress = ttk.Progressbar(parent, mode="determinate",
-                                          style="Scan.Horizontal.TProgressbar",
-                                          maximum=100)
-        self._progress.pack(fill="x", padx=10, pady=(0, 4))
+        self._progress = widgets.scan_progressbar(
+            parent, mode="determinate", maximum=100,
+            fill="x", padx=10, pady=(0, 4))
 
         # ── Results tree ──────────────────────────────────────────────────────
-        tree_frame = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
+        self._tree, tree_frame = widgets.results_tree(parent, [
+            ("port",    "Port",    100),
+            ("service", "Service", 220),
+        ])
         tree_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
-
-        theme.apply_treeview_style(style)
-
-        self._tree = ttk.Treeview(
-            tree_frame,
-            columns=("port", "service"),
-            show="headings",
-            style="PiNT.Treeview",
-            selectmode="browse")
-        self._tree.heading("port",    text="Port")
-        self._tree.heading("service", text="Service")
-        self._tree.column("port",    width=100)
-        self._tree.column("service", width=220)
-
-        sb = ttk.Scrollbar(tree_frame, orient="vertical",
-                           command=self._tree.yview)
-        self._tree.configure(yscrollcommand=sb.set)
-        self._tree.pack(side="left", fill="both", expand=True)
-        sb.pack(side="right", fill="y")
 
         # ── Bottom bar ────────────────────────────────────────────────────────
         bottom = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
@@ -158,14 +119,8 @@ class PortScanTab:
             font=theme.font(9), anchor="w")
         self._detail.pack(side="left", fill="x", expand=True)
 
-        self._copy_btn = ctk.CTkButton(
-            bottom, text="Copy",
-            command=self._copy,
-            fg_color=theme.PANEL, text_color=theme.FG,
-            hover_color="#1f2d45",
-            font=theme.font(9),
-            corner_radius=6, border_width=0,
-            width=60, state="disabled")
+        self._copy_btn = widgets.secondary_button(
+            bottom, "Copy", self._copy, state="disabled")
         self._copy_btn.pack(side="right", padx=(5, 0))
 
     # ── Preset toggle ─────────────────────────────────────────────────────────
@@ -222,7 +177,7 @@ class PortScanTab:
             daemon=True).start()
 
     def _run_scan(self, host, ports, timeout):
-        from port_scanner import scan_ports
+        from network.port_scanner import scan_ports
 
         def _progress(completed, total):
             pct = int(completed / total * 100) if total else 100
@@ -259,6 +214,4 @@ class PortScanTab:
         lines = [f"Port scan — {host}", "Port\tService"]
         for d in self._results:
             lines.append(f"{d['port']}/tcp\t{d['service']}")
-        self._root.clipboard_clear()
-        self._root.clipboard_append("\n".join(lines))
-        self._status.configure(text="📋 Copied to clipboard!", text_color=theme.ACCENT)
+        widgets.copy_to_clipboard(self._root, "\n".join(lines), self._status)

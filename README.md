@@ -1,7 +1,7 @@
 # Pi Network Tools - PiNT Desktop 🍺 
 (formally PiNT-Portable & Port Identifier) 
 
-![Version](https://img.shields.io/badge/version-v1.2-blue)
+![Version](https://img.shields.io/badge/version-v1.3-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS%20%7C%20ARP%20%7C%20SNMP-green)
 [![Website](https://img.shields.io/badge/website-pinetworktools.com-blue)](https://pinetworktools.com)
@@ -120,7 +120,8 @@ PiNT-Portable/
 | v0.7    | Port Monitor tab: link speed/duplex, dropped packet counter; EXE publisher metadata; Change adapter button fix |
 | v1.0    | Full GUI overhaul: sidebar navigation, branded in-app logo, progress bars on scans, Settings panel, About panel, larger window |
 | v1.1    | CustomTkinter migration: resizable window, auto-scaling UI, dark themed components, Port ID card grid, polished monitor and about panels |
-| **v1.2**| **Current** - ARP Scanner, Port Scanner and SNMP Query tabs; dependency-free SNMP v1/v2c engine; unified cyan icon tinting |
+| v1.2    | ARP Scanner, Port Scanner and SNMP Query tabs; dependency-free SNMP v1/v2c engine; unified cyan icon tinting |
+| **v1.3**| **Current** - Internal code refactor: centralised theme tokens, shared widget helpers in `gui/widgets.py`, scanners grouped into a `network/` package |
 | Future  | Integrated iPerf3 tester |
 | Future  | macOS support |
 
@@ -154,6 +155,7 @@ PiNT-Portable/
 - [x] **v1.0** - Full GUI overhaul: sidebar navigation replaces tab bar; branded in-app logo with aspect-ratio scaling; animated progress bars on Port ID and mDNS scans; Settings panel for scan timeouts and monitor poll interval; About panel inline; larger 1380x960 window
 - [x] **v1.1** - CustomTkinter migration: auto-scaling UI based on screen resolution; resizable window (min 900x640); Port ID tab redesigned with live info card grid; dark-themed Treeview and scrollbars; centralised theme and scale manager modules; polished Monitor, About and sidebar panels throughout
 - [x] **v1.2** - ARP Scanner tab (subnet sweep, IP/MAC/hostname); Port Scanner tab (TCP connect scan with Top 20/100/Web presets and custom range); SNMP Query tab (GET and WALK, v1/v2c, dependency-free raw UDP implementation); unified cyan icon tinting across all sidebar icons
+- [x] **v1.3** - Internal code refactor for maintainability: every hardcoded colour pulled into `gui/theme.py`; new `gui/widgets.py` with shared helpers (`description`, `primary_button`, `secondary_button`, `scan_progressbar`, `results_tree`, `copy_to_clipboard`) collapsing ~280 lines of per-tab boilerplate; all 8 scanner/parser/query modules grouped into a `network/` package
 - [ ] **Future** - Integrated iPerf3 tester
 - [ ] **Future** - macOS support
 

@@ -40,7 +40,7 @@ class SettingsTab:
         ctk.CTkButton(frame, text="Apply Settings",
                       command=self._apply,
                       fg_color=theme.ACCENT, text_color=theme.BG,
-                      hover_color="#00b8d9",
+                      hover_color=theme.ACCENT_HOVER,
                       font=theme.font(11, "bold"),
                       corner_radius=6, border_width=0,
                       width=150).pack(anchor="w", pady=(20, 4))
@@ -54,7 +54,7 @@ class SettingsTab:
         ctk.CTkFrame(parent, fg_color=theme.DIVIDER,
                      height=2, corner_radius=0).pack(fill="x", pady=(10, 8))
         ctk.CTkLabel(parent, text=title,
-                     fg_color="transparent", text_color="#aaaaaa",
+                     fg_color="transparent", text_color=theme.FG_MUTED,
                      font=theme.font(10, "bold")).pack(anchor="w", pady=(0, 10))
 
     def _setting_row(self, parent, label, initial, from_, to, unit):
@@ -83,7 +83,7 @@ class SettingsTab:
                       fg_color=theme.PANEL,
                       progress_color=theme.ACCENT,
                       button_color=theme.ACCENT,
-                      button_hover_color="#00b8d9",
+                      button_hover_color=theme.ACCENT_HOVER,
                       width=220,
                       command=lambda v, l=val_lbl: l.configure(
                           text=str(round(float(v))))).pack(side="left", padx=(8, 0))
