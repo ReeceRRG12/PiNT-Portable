@@ -1,9 +1,7 @@
-import tkinter as tk
-from tkinter import ttk
 import threading
 
 import customtkinter as ctk
-from gui import theme
+from gui import theme, widgets
 
 
 def _find_psutil_iface(selected_scapy_iface):
@@ -94,16 +92,12 @@ class MonitorTab:
     # ── Build UI ──────────────────────────────────────────────────────────────
 
     def _build(self, parent):
-        _desc = tk.Label(parent,
-                         text="Monitors your network interface for link speed, duplex negotiation "
-                              "and packet drops.\n\n"
-                              "Useful as a basic cable test — drops or half-duplex negotiation "
-                              "often indicate a cable or switch port problem.",
-                         bg=theme.BG, fg=theme.FG_DIM,
-                         font=theme.tk_font(12),
-                         wraplength=600, justify="center")
-        _desc.pack(fill="x", padx=20, pady=(12, 8))
-        parent.bind("<Configure>", lambda e: _desc.configure(wraplength=max(100, e.width - 40)), add="+")
+        widgets.description(
+            parent,
+            "Monitors your network interface for link speed, duplex negotiation "
+            "and packet drops.\n\n"
+            "Useful as a basic cable test — drops or half-duplex negotiation "
+            "often indicate a cable or switch port problem.")
 
         # ── Link info panel ───────────────────────────────────────────────────
         link_frame = ctk.CTkFrame(parent, fg_color=theme.PANEL, corner_radius=8)
@@ -146,6 +140,7 @@ class MonitorTab:
         self._errout_val  = self._counter_cell(counter_row, "TX Errors")
 
         # ── Status / buttons ──────────────────────────────────────────────────
+        # Status font is 11 here (not the toolbar-standard 10), so built inline.
         self._status = ctk.CTkLabel(parent,
                                     text="Press Start Monitor to begin",
                                     fg_color="transparent", text_color=theme.FG_DIM,
@@ -155,31 +150,20 @@ class MonitorTab:
         btn_frame = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
         btn_frame.pack()
 
-        self._start_btn = ctk.CTkButton(btn_frame, text="Start Monitor",
-                                        command=self._start,
-                                        fg_color=theme.ACCENT, text_color=theme.BG,
-                                        hover_color="#00b8d9",
-                                        font=theme.font(11, "bold"),
-                                        corner_radius=6, border_width=0,
-                                        width=140)
+        self._start_btn = widgets.primary_button(
+            btn_frame, "Start Monitor", self._start,
+            width=140, font=theme.font(11, "bold"))
         self._start_btn.pack(side="left", padx=5)
 
-        self._stop_btn = ctk.CTkButton(btn_frame, text="Stop",
-                                       command=self._stop,
-                                       fg_color=theme.PANEL, text_color=theme.ERROR,
-                                       hover_color="#1f2d45",
-                                       font=theme.font(11),
-                                       corner_radius=6, border_width=0,
-                                       width=80, state="disabled")
+        self._stop_btn = widgets.secondary_button(
+            btn_frame, "Stop", self._stop,
+            width=80, font=theme.font(11),
+            text_color=theme.ERROR, state="disabled")
         self._stop_btn.pack(side="left", padx=5)
 
-        self._reset_btn = ctk.CTkButton(btn_frame, text="Reset Counters",
-                                        command=self._reset_counters,
-                                        fg_color=theme.PANEL, text_color=theme.FG,
-                                        hover_color="#1f2d45",
-                                        font=theme.font(10),
-                                        corner_radius=6, border_width=0,
-                                        width=130, state="disabled")
+        self._reset_btn = widgets.secondary_button(
+            btn_frame, "Reset Counters", self._reset_counters,
+            width=130, font=theme.font(10), state="disabled")
         self._reset_btn.pack(side="left", padx=5)
 
     def _stat_cell(self, parent, label, initial):

@@ -1,5 +1,3 @@
-import tkinter as tk
-from tkinter import ttk
 import threading
 import subprocess
 import webbrowser
@@ -7,7 +5,7 @@ import os
 import shutil
 
 import customtkinter as ctk
-from gui import theme
+from gui import theme, widgets
 
 
 def _find_putty():
@@ -41,30 +39,17 @@ class PortTab:
         self._build(parent)
 
     def _build(self, parent):
-        _desc = tk.Label(parent,
-                         text="Identifies which switch and port you are connected to by listening for "
-                              "LLDP and CDP packets broadcast by managed switches.\n\n"
-                              "Useful when tracing cables or auditing patch panels.",
-                         bg=theme.BG, fg=theme.FG_DIM,
-                         font=theme.tk_font(12),
-                         wraplength=600, justify="center")
-        _desc.pack(fill="x", padx=20, pady=(12, 8))
-        parent.bind("<Configure>", lambda e: _desc.configure(wraplength=max(100, e.width - 40)), add="+")
+        widgets.description(
+            parent,
+            "Identifies which switch and port you are connected to by listening for "
+            "LLDP and CDP packets broadcast by managed switches.\n\n"
+            "Useful when tracing cables or auditing patch panels.")
 
-        self.status = ctk.CTkLabel(parent,
-                                   text="Press Scan to detect your switch port",
-                                   fg_color="transparent", text_color=theme.FG_DIM,
-                                   font=theme.font(10))
+        self.status = widgets.status_label(parent, "Press Scan to detect your switch port")
         self.status.pack(pady=(4, 2))
 
-        style = ttk.Style()
-        style.configure("Scan.Horizontal.TProgressbar",
-                        troughcolor=theme.PANEL, background=theme.ACCENT,
-                        bordercolor=theme.PANEL, lightcolor=theme.ACCENT,
-                        darkcolor=theme.ACCENT, thickness=6)
-        self._progress = ttk.Progressbar(parent, mode="indeterminate",
-                                          style="Scan.Horizontal.TProgressbar")
-        self._progress.pack(fill="x", padx=20, pady=(0, 10))
+        self._progress = widgets.scan_progressbar(
+            parent, fill="x", padx=20, pady=(0, 10))
 
         # ── Card grid ─────────────────────────────────────────────────────────
         grid = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
@@ -79,6 +64,8 @@ class PortTab:
         self._vlan_val     = self._card(grid, "VLAN",        2, 1)
 
         # ── Quick-launch bar (hidden until a management IP is found) ──────────
+        # These have a wider auto-sized layout (height=32, no fixed width)
+        # so they don't fit the widgets.secondary_button shape — left inline.
         self._ql_frame = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
 
         ctk.CTkLabel(self._ql_frame, text="Quick Launch →",
@@ -93,7 +80,7 @@ class PortTab:
         ]:
             ctk.CTkButton(self._ql_frame, text=label, command=cmd,
                           fg_color=theme.PANEL, text_color=colour,
-                          hover_color="#1f2d45",
+                          hover_color=theme.PANEL_HOVER,
                           font=theme.font(11, "bold"),
                           corner_radius=6, border_width=0,
                           height=32).pack(side="left", padx=3)
@@ -102,21 +89,14 @@ class PortTab:
         self._btn_frame = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
         self._btn_frame.pack(pady=8)
 
-        self.scan_btn = ctk.CTkButton(self._btn_frame, text="Scan",
-                                      command=self.start_scan,
-                                      fg_color=theme.ACCENT, text_color=theme.BG,
-                                      hover_color="#00b8d9",
-                                      font=theme.font(11, "bold"),
-                                      corner_radius=6, border_width=0,
-                                      width=100)
+        self.scan_btn = widgets.primary_button(
+            self._btn_frame, "Scan", self.start_scan,
+            width=100, font=theme.font(11, "bold"))
         self.scan_btn.pack(side="left", padx=5)
 
-        self.copy_btn = ctk.CTkButton(self._btn_frame, text="Copy to Clipboard",
-                                      command=self.copy_to_clipboard,
-                                      fg_color=theme.PANEL, text_color=theme.FG,
-                                      hover_color="#1f2d45",
-                                      font=theme.font(10),
-                                      corner_radius=6, border_width=0)
+        self.copy_btn = widgets.secondary_button(
+            self._btn_frame, "Copy to Clipboard", self.copy_to_clipboard,
+            width=140, font=theme.font(10))
         self.copy_btn.pack(side="left", padx=5)
 
     def _card(self, parent, label, col, row):
@@ -154,7 +134,7 @@ class PortTab:
         threading.Thread(target=self._run_scan, daemon=True).start()
 
     def _run_scan(self):
-        from scanner import scan
+        from network.scanner import scan
         scan(self._handle_result,
              timeout=self._state.settings.port_timeout,
              iface=self._state.selected_iface)
@@ -211,9 +191,7 @@ class PortTab:
                 f"Model: {d.get('description', d.get('model', 'Unknown'))} | "
                 f"IP: {d.get('ip', 'Unknown')} | "
                 f"Protocol: {d.get('protocol', 'Unknown')}")
-        self._root.clipboard_clear()
-        self._root.clipboard_append(text)
-        self.status.configure(text="📋 Copied to clipboard!", text_color=theme.ACCENT)
+        widgets.copy_to_clipboard(self._root, text, self.status)
 
     # ── Quick-launch helpers ──────────────────────────────────────────────────
 

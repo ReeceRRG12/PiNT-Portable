@@ -1,9 +1,8 @@
 import tkinter as tk
-from tkinter import ttk
 import threading
 
 import customtkinter as ctk
-from gui import theme
+from gui import theme, widgets
 
 
 class ArpTab:
@@ -16,35 +15,20 @@ class ArpTab:
         self._build(parent)
 
     def _build(self, parent):
-        _desc = tk.Label(
+        widgets.description(
             parent,
-            text="Sends ARP requests across the local subnet to discover all active devices.\n\n"
-                 "Results show each device's IP address, MAC address, and hostname (if resolvable).",
-            bg=theme.BG, fg=theme.FG_DIM,
-            font=theme.tk_font(12),
-            wraplength=600, justify="center")
-        _desc.pack(fill="x", padx=20, pady=(12, 8))
-        parent.bind("<Configure>",
-                    lambda e: _desc.configure(wraplength=max(100, e.width - 40)),
-                    add="+")
+            "Sends ARP requests across the local subnet to discover all active devices.\n\n"
+            "Results show each device's IP address, MAC address, and hostname (if resolvable).")
 
         # ── Toolbar ───────────────────────────────────────────────────────────
         top = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
         top.pack(fill="x", padx=10, pady=(0, 2))
 
-        self._status = ctk.CTkLabel(
-            top, text="Press Scan to discover devices on the subnet",
-            fg_color="transparent", text_color=theme.FG_DIM,
-            font=theme.font(10))
+        self._status = widgets.status_label(
+            top, "Press Scan to discover devices on the subnet")
         self._status.pack(side="left")
 
-        self._scan_btn = ctk.CTkButton(
-            top, text="Scan",
-            command=self._start_scan,
-            fg_color=theme.ACCENT, text_color=theme.BG,
-            hover_color="#00b8d9",
-            font=theme.font(10, "bold"),
-            corner_radius=6, border_width=0, width=80)
+        self._scan_btn = widgets.primary_button(top, "Scan", self._start_scan)
         self._scan_btn.pack(side="right")
 
         # ── Subnet field ──────────────────────────────────────────────────────
@@ -74,39 +58,16 @@ class ArpTab:
                      font=theme.font(10), width=50).pack(side="left", padx=5)
 
         # ── Progress bar ──────────────────────────────────────────────────────
-        style = ttk.Style()
-        style.configure("Scan.Horizontal.TProgressbar",
-                        troughcolor=theme.PANEL, background=theme.ACCENT,
-                        bordercolor=theme.PANEL, lightcolor=theme.ACCENT,
-                        darkcolor=theme.ACCENT, thickness=6)
-        self._progress = ttk.Progressbar(parent, mode="indeterminate",
-                                          style="Scan.Horizontal.TProgressbar")
-        self._progress.pack(fill="x", padx=10, pady=(0, 4))
+        self._progress = widgets.scan_progressbar(
+            parent, fill="x", padx=10, pady=(0, 4))
 
         # ── Results tree ──────────────────────────────────────────────────────
-        tree_frame = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
+        self._tree, tree_frame = widgets.results_tree(parent, [
+            ("ip",       "IP Address",  130),
+            ("mac",      "MAC Address", 160),
+            ("hostname", "Hostname",    260),
+        ])
         tree_frame.pack(fill="both", expand=True, padx=10, pady=(0, 5))
-
-        theme.apply_treeview_style(style)
-
-        self._tree = ttk.Treeview(
-            tree_frame,
-            columns=("ip", "mac", "hostname"),
-            show="headings",
-            style="PiNT.Treeview",
-            selectmode="browse")
-        self._tree.heading("ip",       text="IP Address")
-        self._tree.heading("mac",      text="MAC Address")
-        self._tree.heading("hostname", text="Hostname")
-        self._tree.column("ip",       width=130)
-        self._tree.column("mac",      width=160)
-        self._tree.column("hostname", width=260)
-
-        sb = ttk.Scrollbar(tree_frame, orient="vertical",
-                           command=self._tree.yview)
-        self._tree.configure(yscrollcommand=sb.set)
-        self._tree.pack(side="left", fill="both", expand=True)
-        sb.pack(side="right", fill="y")
 
         # ── Bottom bar ────────────────────────────────────────────────────────
         bottom = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
@@ -118,14 +79,8 @@ class ArpTab:
             font=theme.font(9), anchor="w")
         self._detail.pack(side="left", fill="x", expand=True)
 
-        self._copy_btn = ctk.CTkButton(
-            bottom, text="Copy",
-            command=self._copy,
-            fg_color=theme.PANEL, text_color=theme.FG,
-            hover_color="#1f2d45",
-            font=theme.font(9),
-            corner_radius=6, border_width=0,
-            width=60, state="disabled")
+        self._copy_btn = widgets.secondary_button(
+            bottom, "Copy", self._copy, state="disabled")
         self._copy_btn.pack(side="right", padx=(5, 0))
 
         self._tree.bind("<<TreeviewSelect>>", self._on_select)
@@ -134,7 +89,7 @@ class ArpTab:
 
     def _detect_subnet(self):
         try:
-            from arp_scanner import get_subnet_for_iface
+            from network.arp_scanner import get_subnet_for_iface
             subnet = get_subnet_for_iface(self._state.selected_iface)
             return subnet or ""
         except Exception:
@@ -170,7 +125,7 @@ class ArpTab:
             daemon=True).start()
 
     def _run_scan(self, network, timeout):
-        from arp_scanner import scan_arp
+        from network.arp_scanner import scan_arp
         scan_arp(network,
                  iface=self._state.selected_iface,
                  timeout=timeout,
@@ -205,6 +160,4 @@ class ArpTab:
         lines = ["IP Address\tMAC Address\tHostname"]
         for d in self._results:
             lines.append(f"{d['ip']}\t{d['mac']}\t{d['hostname']}")
-        self._root.clipboard_clear()
-        self._root.clipboard_append("\n".join(lines))
-        self._status.configure(text="📋 Copied to clipboard!", text_color=theme.ACCENT)
+        widgets.copy_to_clipboard(self._root, "\n".join(lines), self._status)

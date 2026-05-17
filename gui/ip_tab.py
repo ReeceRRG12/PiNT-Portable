@@ -1,9 +1,7 @@
-import tkinter as tk
-from tkinter import ttk
 import threading
 
 import customtkinter as ctk
-from gui import theme
+from gui import theme, widgets
 
 
 class IpTab:
@@ -17,33 +15,20 @@ class IpTab:
         self._build(parent)
 
     def _build(self, parent):
-        _desc = tk.Label(parent,
-                         text="Displays the IP configuration of your network adapter, including DHCP "
-                              "server details and scope options.\n\n"
-                              "Useful for understanding the network segment you are connected to "
-                              "without needing switch or router access.",
-                         bg=theme.BG, fg=theme.FG_DIM,
-                         font=theme.tk_font(12),
-                         wraplength=600, justify="center")
-        _desc.pack(fill="x", padx=20, pady=(12, 8))
-        parent.bind("<Configure>", lambda e: _desc.configure(wraplength=max(100, e.width - 40)), add="+")
+        widgets.description(
+            parent,
+            "Displays the IP configuration of your network adapter, including DHCP "
+            "server details and scope options.\n\n"
+            "Useful for understanding the network segment you are connected to "
+            "without needing switch or router access.")
 
         top = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=0)
         top.pack(fill="x", padx=10, pady=(0, 5))
 
-        self.status = ctk.CTkLabel(top,
-                                   text="Press Scan to load IP & DHCP information",
-                                   fg_color="transparent", text_color=theme.FG_DIM,
-                                   font=theme.font(10))
+        self.status = widgets.status_label(top, "Press Scan to load IP & DHCP information")
         self.status.pack(side="left")
 
-        self.scan_btn = ctk.CTkButton(top, text="Scan",
-                                      command=self.start_scan,
-                                      fg_color=theme.ACCENT, text_color=theme.BG,
-                                      hover_color="#00b8d9",
-                                      font=theme.font(10, "bold"),
-                                      corner_radius=6, border_width=0,
-                                      width=80)
+        self.scan_btn = widgets.primary_button(top, "Scan", self.start_scan)
         self.scan_btn.pack(side="right")
 
         # ── Scrollable content area ───────────────────────────────────────────
@@ -62,14 +47,14 @@ class IpTab:
         threading.Thread(target=self._run_scan, daemon=True).start()
 
     def _run_scan(self):
-        from ip_info import get_ip_config, get_dhcp_options
+        from network.ip_info import get_ip_config, get_dhcp_options
         ip_data   = get_ip_config()
         dhcp_opts = (get_dhcp_options(timeout=10, iface=self._state.selected_iface)
                      if ip_data.get("dhcp_enabled") else [])
         self._root.after(0, self._update_ui, ip_data, dhcp_opts)
 
     def _update_ui(self, ip_data, dhcp_opts):
-        from ip_info import FLAG_COLOURS
+        from network.ip_info import FLAG_COLOURS
         parent = self._inner
 
         self._section(parent, "IP Configuration")
