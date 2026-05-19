@@ -1,7 +1,7 @@
 # Pi Network Tools - PiNT Desktop 🍺 
 (formally PiNT-Portable & Port Identifier) 
 
-![Version](https://img.shields.io/badge/version-v1.4-blue)
+![Version](https://img.shields.io/badge/version-v1.5-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 ![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS%20%7C%20ARP%20%7C%20SNMP-green)
 [![Website](https://img.shields.io/badge/website-pinetworktools.com-blue)](https://pinetworktools.com)
@@ -21,7 +21,7 @@ A lightweight portable Windows tool for field technicians. Identifies which swit
 - **Port Monitor tab:** displays negotiated link speed and duplex; tracks dropped and errored packets since monitoring started for basic cable-test feedback
 - **mDNS / Bonjour browser:** discovers devices broadcasting on the local network
 - **Simple / Full view toggle:** clean view for quick reference, full view for Bonjour gateway config
-- **Active IP resolution:** sends mDNS queries to resolve device IPs
+- **Passive IP detection:** reads the sender's unicast IP directly from the mDNS packet — no active querying needed
 - **Extended IP & DHCP tab:** full adapter detail including DHCP server, scope options and lease info
 - **Colour-coded DHCP options:** flags standard, notable and unknown scope options at a glance
 - **ARP Scanner:** sweeps the local subnet with ARP to discover all active devices; shows IP, MAC and hostname; auto-detects subnet from selected adapter; one-click XLSX export for loading into PiNT Live
@@ -85,7 +85,7 @@ PiNT-Portable/
 │   ├── scanner.py            # LLDP/CDP packet capture
 │   ├── lldp_parser.py        # LLDP protocol parser
 │   ├── cdp_parser.py         # CDP protocol parser
-│   ├── mdns_scanner.py       # mDNS / Bonjour discovery & IP resolution
+│   ├── mdns_scanner.py       # mDNS / Bonjour discovery; IPs read from packet source
 │   ├── arp_scanner.py        # ARP subnet sweep
 │   ├── port_scanner.py       # TCP connect port scanner
 │   ├── snmp_query.py         # SNMP v1/v2c GET & WALK (raw UDP, no dependencies)
@@ -129,7 +129,8 @@ PiNT-Portable/
 | v1.1    | CustomTkinter migration: resizable window, auto-scaling UI, dark themed components, Port ID card grid, polished monitor and about panels |
 | v1.2    | ARP Scanner, Port Scanner and SNMP Query tabs; dependency-free SNMP v1/v2c engine; unified cyan icon tinting |
 | v1.3    | Internal code refactor: centralised theme tokens, shared widget helpers in `gui/widgets.py`, scanners grouped into a `network/` package |
-| **v1.4**| **Current** - ARP tab XLSX export for PiNT Live: flat IP / MAC / Hostname workbook in the schema PiNT Live's *Load ARP List…* sidebar consumes |
+| v1.4    | ARP tab XLSX export for PiNT Live: flat IP / MAC / Hostname workbook in the schema PiNT Live's *Load ARP List…* sidebar consumes |
+| **v1.5**| **Current** - mDNS IP now read directly from packet source address; removes active resolve step and Resolve IPs button; adds GitHub Actions Windows EXE build |
 | Future  | Integrated iPerf3 tester |
 | Future  | macOS support |
 
@@ -165,6 +166,7 @@ PiNT-Portable/
 - [x] **v1.2** - ARP Scanner tab (subnet sweep, IP/MAC/hostname); Port Scanner tab (TCP connect scan with Top 20/100/Web presets and custom range); SNMP Query tab (GET and WALK, v1/v2c, dependency-free raw UDP implementation); unified cyan icon tinting across all sidebar icons
 - [x] **v1.3** - Internal code refactor for maintainability: every hardcoded colour pulled into `gui/theme.py`; new `gui/widgets.py` with shared helpers (`description`, `primary_button`, `secondary_button`, `scan_progressbar`, `results_tree`, `copy_to_clipboard`) collapsing ~280 lines of per-tab boilerplate; all 8 scanner/parser/query modules grouped into a `network/` package
 - [x] **v1.4** - ARP tab gains a one-click XLSX export: flat single-sheet workbook with `IP Address`, `MAC Address` and `Hostname` columns, ready to drop into PiNT Live's *Load ARP List…* sidebar to enrich per-switch port documentation; default filename derived from the scanned subnet and date
+- [x] **v1.5** - mDNS IP detection now passive: sender's unicast IP is read directly from the IP layer of each mDNS response packet (`pkt[IP].src`), removing the need for active queries, hostname resolution chains, or the separate Resolve IPs button; GitHub Actions workflow added for automated Windows EXE builds
 - [ ] **Future** - Integrated iPerf3 tester
 - [ ] **Future** - macOS support
 
