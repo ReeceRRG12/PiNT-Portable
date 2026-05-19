@@ -43,11 +43,6 @@ class MdnsTab:
             width=90, font=theme.font(10))
         self.toggle_btn.pack(side="right", padx=(0, 5))
 
-        self.resolve_btn = widgets.secondary_button(
-            top, "Resolve IPs", self._start_resolve,
-            width=100, font=theme.font(10), state="disabled")
-        self.resolve_btn.pack(side="right", padx=(0, 5))
-
         # ── Progress bar ──────────────────────────────────────────────────────
         self._progress = widgets.scan_progressbar(
             parent, fill="x", padx=10, pady=(0, 4))
@@ -102,7 +97,6 @@ class MdnsTab:
     def start_scan(self):
         timeout = self._state.settings.mdns_timeout
         self.scan_btn.configure(state="disabled")
-        self.resolve_btn.configure(state="disabled")
         self.export_btn.configure(state="disabled")
         self.copy_btn.configure(state="disabled")
         self.status.configure(
@@ -133,7 +127,6 @@ class MdnsTab:
             text=f"✅ Found {count} mDNS device{'s' if count != 1 else ''}",
             text_color=theme.SUCCESS if count > 0 else theme.ERROR)
         self.scan_btn.configure(state="normal")
-        self.resolve_btn.configure(state="normal")
         self.export_btn.configure(state="normal")
         self.copy_btn.configure(state="normal")
         if devices:
@@ -171,29 +164,6 @@ class MdnsTab:
             tags = self._tree.item(sel[0], "tags")
             if tags:
                 self._detail.configure(text=f"Raw: {tags[0]}")
-
-    # ── IP resolve ────────────────────────────────────────────────────────────
-
-    def _start_resolve(self):
-        self.resolve_btn.configure(state="disabled")
-        self.scan_btn.configure(state="disabled")
-        self.status.configure(
-            text="Sending IP resolve request... (45s)", text_color=theme.WARNING)
-        threading.Thread(target=self._run_resolve, daemon=True).start()
-
-    def _run_resolve(self):
-        from network.mdns_scanner import resolve_mdns_ips
-        resolve_mdns_ips(self._results, self._handle_resolve)
-
-    def _handle_resolve(self, updated):
-        self._root.after(0, self._finish_resolve, updated)
-
-    def _finish_resolve(self, updated):
-        self._results = updated
-        self._apply_filter()
-        self.resolve_btn.configure(state="normal")
-        self.scan_btn.configure(state="normal")
-        self.status.configure(text="✅ IP resolve complete", text_color=theme.SUCCESS)
 
     # ── Copy / export ─────────────────────────────────────────────────────────
 

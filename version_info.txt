@@ -1,7 +1,7 @@
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 4, 0, 0),
-    prodvers=(1, 4, 0, 0),
+    filevers=(1, 5, 0, 0),
+    prodvers=(1, 5, 0, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x4,
@@ -16,12 +16,12 @@ VSVersionInfo(
         [
           StringStruct(u'CompanyName',      u'Pi Network Tools'),
           StringStruct(u'FileDescription',  u'PiNT - Port Identifier Network Tool'),
-          StringStruct(u'FileVersion',      u'1.4.0.0'),
+          StringStruct(u'FileVersion',      u'1.5.0.0'),
           StringStruct(u'InternalName',     u'pint'),
           StringStruct(u'LegalCopyright',   u'Copyright \xa9 2026 Pi Network Tools'),
           StringStruct(u'OriginalFilename', u'pint.exe'),
           StringStruct(u'ProductName',      u'PiNT - Port Identifier Network Tool'),
-          StringStruct(u'ProductVersion',   u'1.4.0.0'),
+          StringStruct(u'ProductVersion',   u'1.5.0.0'),
         ]
       )
     ]),

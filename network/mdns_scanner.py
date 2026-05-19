@@ -1,4 +1,4 @@
-from scapy.all import sniff, DNS, IP
+from scapy.all import sniff, DNS, IP, IPv6
 import re
 import socket
 import threading
@@ -120,6 +120,11 @@ def scan_mdns(callback, timeout=30, iface=None):
         try:
             if not pkt.haslayer(DNS):
                 return
+            src_ip = None
+            if pkt.haslayer(IP):
+                src_ip = pkt[IP].src
+            elif pkt.haslayer(IPv6):
+                src_ip = pkt[IPv6].src
             dns = pkt[DNS]
             for section in ['an', 'ar', 'ns']:
                 try:
@@ -150,11 +155,13 @@ def scan_mdns(callback, timeout=30, iface=None):
                             devices[key] = {
                                 "friendly": friendly,
                                 "type": stype_display,
-                                "ip": "Unknown",
+                                "ip": src_ip or "Unknown",
                                 "raw": raw,
                                 "simple": service_type in SIMPLE_SERVICE_TYPES,
                                 "instance": instance
                             }
+                        elif src_ip and devices[key]["ip"] == "Unknown":
+                            devices[key]["ip"] = src_ip
                 except Exception:
                     pass
         except Exception as e:
@@ -190,75 +197,3 @@ def _resolve_ips(devices, host_ip_map, srv_map):
             device["ip"] = norm_ip_map[norm_friendly]
 
 
-def resolve_mdns_ips(current_devices, callback):
-    host_ip_map = {}
-    srv_map = {}
-
-    queries = [
-        "_airplay._tcp.local",
-        "_raop._tcp.local",
-        "_companion-link._tcp.local",
-        "_hap._tcp.local",
-        "_googlecast._tcp.local",
-        "_http._tcp.local",
-        "_printer._tcp.local",
-        "_smb._tcp.local",
-        "_sftp-ssh._tcp.local",
-    ]
-
-    def delayed_queries():
-        import time
-        time.sleep(1)
-        send_mdns_queries(queries)
-        time.sleep(10)
-        send_mdns_queries(queries)
-        time.sleep(10)
-        send_mdns_queries(queries)
-        time.sleep(10)
-        send_mdns_queries(queries)
-
-    query_thread = threading.Thread(target=delayed_queries, daemon=True)
-    query_thread.start()
-
-    def parse_rr_chain(rr):
-        while rr and hasattr(rr, 'type'):
-            try:
-                rrname = strip_local(
-                    rr.rrname.decode("utf-8", errors="ignore")
-                    if isinstance(rr.rrname, bytes) else str(rr.rrname)
-                )
-                if rr.type == 1 and hasattr(rr, 'rdata'):
-                    host_ip_map[rrname] = rr.rdata
-                elif rr.type == 33 and hasattr(rr, 'target'):
-                    target = strip_local(
-                        rr.target.decode("utf-8", errors="ignore")
-                        if isinstance(rr.target, bytes) else str(rr.target)
-                    )
-                    srv_map[rrname] = target
-                rr = rr.payload if hasattr(rr, 'payload') else None
-            except Exception:
-                break
-
-    def handle_packet(pkt):
-        try:
-            if not pkt.haslayer(DNS):
-                return
-            dns = pkt[DNS]
-            for section in ['an', 'ar']:
-                try:
-                    parse_rr_chain(getattr(dns, section))
-                except Exception:
-                    pass
-        except Exception as e:
-            print(f"Resolve parse error: {e}")
-
-    sniff_kwargs = {"filter": "udp port 5353", "prn": handle_packet,
-                    "timeout": 45, "store": False}
-    sniff(**sniff_kwargs)
-
-    updated = [dict(d) for d in current_devices]
-    for d in updated:
-        if "simple" not in d:
-            d["simple"] = False
-    _resolve_ips({d["raw"]: d for d in updated}, host_ip_map, srv_map)
-    callback(updated)
