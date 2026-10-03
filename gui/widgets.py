@@ -7,6 +7,8 @@ of a common widget is a one-file edit.
 
 import tkinter as tk
 from tkinter import ttk
+import ipaddress
+import re
 
 import customtkinter as ctk
 from gui import theme
@@ -14,15 +16,13 @@ from gui import theme
 
 def description(parent, text):
     """
-    Centered grey description label at the top of a tab. Auto-rewraps when
-    the window resizes. Uses tk.Label (not CTk) because tk_font is manually
-    scaled and the auto-wrap behaviour is more reliable here.
+    Left-aligned introduction that rewraps with the panel width.
     """
-    label = tk.Label(parent, text=text,
+    label = tk.Label(parent, text=text.replace("\n\n", " "),
                      bg=theme.BG, fg=theme.FG_DIM,
-                     font=theme.tk_font(12),
-                     wraplength=600, justify="center")
-    label.pack(fill="x", padx=20, pady=(12, 8))
+                     font=theme.tk_font(13),
+                     wraplength=600, justify="left", anchor="w")
+    label.pack(fill="x", padx=20, pady=(16, 18))
     parent.bind("<Configure>",
                 lambda e: label.configure(wraplength=max(100, e.width - 40)),
                 add="+")
@@ -33,7 +33,7 @@ def status_label(parent, text):
     """Dim status label — typically the first thing in a tab's toolbar."""
     return ctk.CTkLabel(parent, text=text,
                         fg_color="transparent", text_color=theme.FG_DIM,
-                        font=theme.font(10))
+                        font=theme.font(12))
 
 
 def primary_button(parent, text, command, **overrides):
@@ -44,8 +44,8 @@ def primary_button(parent, text, command, **overrides):
     kwargs = dict(
         fg_color=theme.ACCENT, text_color=theme.BG,
         hover_color=theme.ACCENT_HOVER,
-        font=theme.font(10, "bold"),
-        corner_radius=6, border_width=0, width=80)
+        font=theme.font(13, "bold"),
+        corner_radius=8, border_width=0, width=88, height=36)
     kwargs.update(overrides)
     return ctk.CTkButton(parent, text=text, command=command, **kwargs)
 
@@ -58,8 +58,9 @@ def secondary_button(parent, text, command, **overrides):
     kwargs = dict(
         fg_color=theme.PANEL, text_color=theme.FG,
         hover_color=theme.PANEL_HOVER,
-        font=theme.font(9),
-        corner_radius=6, border_width=0, width=60)
+        font=theme.font(12),
+        corner_radius=8, border_width=1, border_color=theme.DIVIDER,
+        width=70, height=36)
     kwargs.update(overrides)
     return ctk.CTkButton(parent, text=text, command=command, **kwargs)
 
@@ -79,9 +80,35 @@ def scan_progressbar(parent, mode="indeterminate", maximum=None, **pack_kwargs):
     return bar
 
 
+def _sort_key(value):
+    """Sort addresses numerically and mixed device names in natural order."""
+    text = str(value).strip()
+    try:
+        address = ipaddress.ip_address(text)
+        return (0, address.version, int(address))
+    except ValueError:
+        pass
+    # Tagged pieces avoid comparing str with int for mixed text/numeric cells.
+    return (1, tuple((0, int(part)) if part.isdigit() else (1, part.casefold())
+                     for part in re.split(r"(\d+)", text) if part))
+
+
+def _sort_tree(tree, column, descending=False):
+    rows = sorted(tree.get_children(""),
+                  key=lambda item: _sort_key(tree.set(item, column)),
+                  reverse=descending)
+    for index, item in enumerate(rows):
+        tree.move(item, "", index)
+    for key in tree["columns"]:
+        title = tree.heading(key, "text").removesuffix("  ↑").removesuffix("  ↓")
+        tree.heading(key, text=title + ("  ↓" if descending else "  ↑") if key == column else title,
+                     command=lambda c=key, reverse=(not descending if key == column else False):
+                         _sort_tree(tree, c, reverse))
+
+
 def results_tree(parent, columns):
     """
-    Dark-themed Treeview with a vertical scrollbar, inside its own frame.
+    Sortable results with both scrollbars, inside their own frame.
 
     columns: list of (key, heading, width) tuples.
 
@@ -99,13 +126,18 @@ def results_tree(parent, columns):
                         style="PiNT.Treeview",
                         selectmode="browse")
     for key, heading, width in columns:
-        tree.heading(key, text=heading)
-        tree.column(key, width=width)
+        tree.heading(key, text=heading, command=lambda c=key: _sort_tree(tree, c))
+        scaled_width = round(width * theme._scale())
+        tree.column(key, width=scaled_width, minwidth=min(scaled_width, 130), anchor="w")
 
     sb = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
-    tree.configure(yscrollcommand=sb.set)
-    tree.pack(side="left", fill="both", expand=True)
-    sb.pack(side="right", fill="y")
+    horizontal = ttk.Scrollbar(frame, orient="horizontal", command=tree.xview)
+    tree.configure(yscrollcommand=sb.set, xscrollcommand=horizontal.set)
+    frame.grid_rowconfigure(0, weight=1)
+    frame.grid_columnconfigure(0, weight=1)
+    tree.grid(row=0, column=0, sticky="nsew")
+    sb.grid(row=0, column=1, sticky="ns")
+    horizontal.grid(row=1, column=0, sticky="ew")
     return tree, frame
 
 

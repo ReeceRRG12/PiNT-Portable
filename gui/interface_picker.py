@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+import sys
 
 import customtkinter as ctk
 from gui import theme
@@ -8,38 +9,58 @@ from gui import theme
 def _enumerate_interfaces():
     """
     Return a list of dicts describing usable network interfaces,
-    using scapy's conf.ifaces. Filters out loopback and unassigned.
+    using scapy's conf.ifaces. Layer-2 discovery also works without an IPv4 lease.
     """
     interfaces = []
     try:
         from scapy.all import conf
+        import psutil
+        stats = psutil.net_if_stats()
+        details = {}
+        if sys.platform == 'darwin':
+            from network.platform_info import macos_interface_details
+            details = macos_interface_details()
         for name, iface in conf.ifaces.items():
             try:
                 ip  = getattr(iface, 'ip',          '') or ''
                 mac = getattr(iface, 'mac',         '') or ''
                 desc = getattr(iface, 'description', '') or name
+                native = details.get(name, {})
+                if native.get('description'):
+                    desc = f"{native['description']} ({name})"
 
-                if not ip or ip.startswith('127.') or ip == '0.0.0.0':
+                if ip.startswith('127.') or desc.lower().startswith('loopback') or name == 'lo0':
                     continue
 
                 dl = desc.lower()
-                is_wireless = any(w in dl for w in
+                is_wireless = native.get('type') == 'Wireless' or any(w in dl for w in
                                   ['wi-fi', 'wifi', 'wireless', '802.11'])
-                is_virtual  = any(w in dl for w in
+                is_virtual  = native.get('type') == 'Virtual/VPN' or any(w in dl for w in
                                   ['virtual', 'hyper-v', 'vmware', 'vpn',
                                    'tunnel', 'loopback', 'bluetooth',
                                    'npcap loopback', 'miniport'])
+                if sys.platform == 'darwin' and name.startswith(('bridge', 'utun', 'awdl', 'llw', 'anpi')):
+                    is_virtual = True
                 is_apipa    = ip.startswith('169.254.')
+                has_ip = bool(ip and ip != '0.0.0.0')
+                if not has_ip and (is_virtual or not mac or mac == '00:00:00:00:00:00'):
+                    continue
+                link = stats.get(name)
+                if not has_ip and link is not None and not link.isup:
+                    continue
+                is_wired = (not is_wireless and not is_virtual and
+                            (native.get('type') == 'Wired' or sys.platform == 'win32' or
+                             any(w in dl for w in ('ethernet', 'wired', 'lan adapter'))))
 
                 itype = ('Wireless' if is_wireless
                          else 'Virtual/VPN' if is_virtual
-                         else 'Wired')
-                recommended = not is_virtual and not is_wireless and not is_apipa
+                         else 'Wired' if is_wired else 'Network')
+                recommended = is_wired and has_ip and not is_apipa
 
                 interfaces.append({
                     'name':        name,
                     'description': desc,
-                    'ip':          ip,
+                    'ip':          ip if has_ip else 'No IPv4 address',
                     'mac':         mac,
                     'type':        itype,
                     'recommended': recommended,
@@ -48,6 +69,9 @@ def _enumerate_interfaces():
                 continue
     except Exception:
         pass
+    interfaces.sort(key=lambda item: (not item['recommended'],
+                                     item['ip'] == 'No IPv4 address',
+                                     item['description'].casefold()))
     return interfaces
 
 
@@ -60,6 +84,9 @@ def get_iface_display(iface_name):
         iface = conf.ifaces.get(iface_name)
         if iface:
             desc = getattr(iface, 'description', '') or iface_name
+            if sys.platform == 'darwin':
+                from network.platform_info import macos_interface_details
+                desc = macos_interface_details().get(iface_name, {}).get('description', desc)
             ip   = getattr(iface, 'ip', '') or ''
             label = desc[:32] + ('…' if len(desc) > 32 else '')
             return f"{label}  ({ip})" if ip else label
@@ -89,11 +116,6 @@ class InterfacePicker:
         if not force:
             if len(self._interfaces) == 1:
                 self.result = self._interfaces[0]['name']
-                return
-
-            recommended = [i for i in self._interfaces if i['recommended']]
-            if len(recommended) == 1:
-                self.result = recommended[0]['name']
                 return
 
         self._build(parent)

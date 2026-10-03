@@ -1,8 +1,9 @@
 # PiNT development dependencies
-# End users run the bundled EXE — these are for local dev only
+# End users run the bundled Windows EXE or macOS app
 
 customtkinter>=5.2.0
 Pillow>=9.0.0
 scapy>=2.5.0
+psutil>=5.9.0
 openpyxl>=3.0.0
 pyinstaller>=6.0.0

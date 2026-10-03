@@ -2,11 +2,11 @@
 (formally PiNT-Portable & Port Identifier) 
 
 ![Version](https://img.shields.io/badge/version-v1.5-blue)
-![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey)
 ![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS%20%7C%20ARP%20%7C%20SNMP-green)
 [![Website](https://img.shields.io/badge/website-pinetworktools.com-blue)](https://pinetworktools.com)
 
-A lightweight portable Windows tool for field technicians. Identifies which switch port your machine is connected to using LLDP and CDP, discovers mDNS/Bonjour devices, sweeps the local subnet with ARP, scans hosts for open ports, and queries SNMP-enabled devices. No complex network tools required.
+A lightweight desktop network tool for field technicians, with Windows executable and macOS app builds. Identifies which switch port your machine is connected to using LLDP and CDP, discovers mDNS/Bonjour devices, sweeps the local subnet with ARP, scans hosts for open ports, and queries SNMP-enabled devices. No complex network tools required.
 
 ---
 
@@ -17,11 +17,11 @@ A lightweight portable Windows tool for field technicians. Identifies which swit
 - **Multi-vendor LLDP support:** tested with TP-Link, Ruckus, UniFi and more
 - **Port ID card layout:** Switch, Port, Protocol, Model, IP and VLAN displayed as live info cards
 - **Network adapter picker:** detects all interfaces on launch, lets you choose the right one with a recommended highlight; remembers selection for the session
-- **Quick Launch buttons:** once a management IP is found, one-click SSH and Telnet via PuTTY, or open HTTP/HTTPS in your browser
+- **Quick Launch buttons:** once a management IP is found, SSH via macOS Terminal or Windows PuTTY/OpenSSH, optional Telnet clients, and HTTP/HTTPS in your browser
 - **Port Monitor tab:** displays negotiated link speed and duplex; tracks dropped and errored packets since monitoring started for basic cable-test feedback
 - **mDNS / Bonjour browser:** discovers devices broadcasting on the local network
 - **Simple / Full view toggle:** clean view for quick reference, full view for Bonjour gateway config
-- **Passive IP detection:** reads the sender's unicast IP directly from the mDNS packet — no active querying needed
+- **mDNS address resolution:** prefers advertised SRV-target A/AAAA records, using the packet source as a fallback; proxy responses retain the service device address
 - **Extended IP & DHCP tab:** full adapter detail including DHCP server, scope options and lease info
 - **Colour-coded DHCP options:** flags standard, notable and unknown scope options at a glance
 - **ARP Scanner:** sweeps the local subnet with ARP to discover all active devices; shows IP, MAC and hostname; auto-detects subnet from selected adapter; one-click XLSX export for loading into PiNT Live
@@ -30,9 +30,10 @@ A lightweight portable Windows tool for field technicians. Identifies which swit
 - **Session-scoped export to XLS:** accumulate results across multiple scans and export as a single styled Excel file
 - **Export to CSV:** save mDNS scan results for reporting
 - **Copy to clipboard:** paste results directly into Teams or email
-- **Scalable UI:** auto-detects screen resolution on startup and scales fonts, icons and layout accordingly; resizable window with 900x640 minimum
-- **Auto-installs Npcap** if not already present
-- **Single .exe:** no install required, just run it
+- **Readable desktop UI:** grouped navigation, clear result cards, sortable tables, brighter labels, and window sizing that respects display height and native DPI
+- **Capture setup guidance:** opens the official Npcap download page when needed on Windows
+- **Saved preferences:** scan timeouts and monitor interval persist across launches
+- **Desktop bundles:** Windows `.exe` and macOS `.app`; Python is included
 
 ---
 
@@ -42,17 +43,84 @@ Visit **[pinetworktools.com](https://pinetworktools.com)** for more info, screen
 
 Head to the [Releases](../../releases) page and download the latest `pint.exe`
 
-No Python required. Just download and run.
+No Python required for packaged builds. The desktop refresh and macOS support described below are unreleased source changes; existing published releases may still be Windows-only.
 
 ---
 
-## ⚙️ Requirements
+## ⚙️ Requirements and platform setup
 
-- Windows 10/11
-- Admin rights (required for packet capture)
-- Npcap (auto-installed on first run)
-- A wired ethernet connection to a managed switch
-- PuTTY (optional, required for SSH/Telnet quick launch buttons)
+- Windows 10/11, or macOS with a build matching Apple Silicon / Intel.
+- Wired Ethernet connected to a managed switch for LLDP/CDP port identification.
+- Packet capture access for Port ID, ARP, mDNS capture, and DHCP scope probing.
+- SSH: macOS Terminal, or PuTTY/Windows OpenSSH. Telnet needs an optional client.
+
+On **Windows**, install [Npcap](https://npcap.com/#download) with permissions
+appropriate to your account. Administrator access is needed to install the driver;
+capture privileges depend on its installation options.
+
+On **macOS**, packet capture uses the system's BPF devices. Configure capture access
+with an administrator-approved setup, such as the optional ChmodBPF package in the
+[official Wireshark installer](https://www.wireshark.org/docs/wsug_html_chunked/ChBuildInstallOSXInstall.html).
+PiNT does not change capture permissions. Ordinary TCP/SNMP queries and reading local
+IP configuration do not require raw packet access. If access is missing, capture
+panels report a setup error rather than a misleading empty result.
+
+Mac builds are currently developer builds. Local ad-hoc signing is **not** Apple
+Developer ID signing or notarization; distribution signing and physical network
+capture testing remain release gates. CI defines separate Apple Silicon and Intel builds.
+
+## Development refresh (unreleased)
+
+- Fix CDP management IPv4 parsing, honor SNMP v1/v2c selection, and reject malformed OIDs.
+- Resolve mDNS proxy records using the service target's advertised address.
+- Read the selected adapter through Windows CIM or macOS SystemConfiguration;
+  distinguish unavailable DHCP details from DHCP being disabled.
+- Refresh shared typography, colors, navigation, connection cards, and sortable tables.
+- Save timeouts and monitor settings in the user's PiNT configuration directory.
+- Include `psutil` in clean installations, and run offline regressions before packaging.
+
+### Run from source
+
+Use Python 3.11 or later with Tk support. Create and activate a virtual environment
+(`python3 -m venv .venv` on macOS, `py -3.11 -m venv .venv` on Windows), then run:
+
+```sh
+python -m pip install -r requirements.txt
+python pint.py
+```
+
+Preferences are written only when Apply Settings is pressed, to
+`~/Library/Application Support/PiNT/settings.json` on macOS or
+`%APPDATA%/PiNT/settings.json` on Windows. Scan results remain session-only.
+
+### Test and build
+
+```sh
+python -m unittest discover -s tests -v
+```
+
+Tests use packet fixtures and mocked sockets; they do not scan your network.
+
+Build on the target operating system:
+
+```sh
+# Windows: dist/pint.exe
+python -m PyInstaller --noconfirm pint.spec
+
+# macOS: dist/PiNT.app (architecture follows the build Python)
+python -m PyInstaller --noconfirm pint-macos.spec
+codesign --verify --deep --strict dist/PiNT.app
+```
+
+If `codesign` reports Finder metadata in a synced workspace, stage the macOS build
+outside it, for example with `--distpath /tmp/pint-dist --workpath /tmp/pint-build`,
+and transfer the verified app as a ZIP preserving symlinks.
+
+macOS builders can supply `PINT_CODESIGN_IDENTITY` for their Apple Developer ID;
+notarization is a separate release step. Build jobs produce artifacts on pull
+requests and pushes to main; these are not automatically published releases.
+See [PROJECT_STATE.md](PROJECT_STATE.md) for this implementation's verified status
+and remaining acceptance checks.
 
 ---
 
@@ -61,7 +129,10 @@ No Python required. Just download and run.
 ```
 PiNT-Portable/
 ├── pint.py               # Main application entry point & orchestrator
-├── pint.spec             # PyInstaller build spec
+├── pint.spec             # Windows PyInstaller build spec
+├── pint-macos.spec       # macOS app build spec
+├── app_settings.py       # Persistent user preferences
+├── tests/                # Offline regression tests
 ├── session.py            # Session state manager (cross-cutting)
 ├── exporter.py           # XLS export logic (cross-cutting)
 ├── version_info.txt      # Windows EXE version metadata
@@ -89,7 +160,9 @@ PiNT-Portable/
 │   ├── arp_scanner.py        # ARP subnet sweep
 │   ├── port_scanner.py       # TCP connect port scanner
 │   ├── snmp_query.py         # SNMP v1/v2c GET & WALK (raw UDP, no dependencies)
-│   └── ip_info.py            # IP & DHCP information gathering
+│   ├── platform_info.py      # Windows CIM / macOS SystemConfiguration
+│   ├── capture.py            # Capture setup error messages
+│   └── ip_info.py            # Selected-adapter IP & DHCP gathering
 └── gui/                  # GUI panels and shared widget helpers
     ├── __init__.py
     ├── theme.py              # Centralised colours, fonts and ttk dark styling
@@ -132,7 +205,7 @@ PiNT-Portable/
 | v1.4    | ARP tab XLSX export for PiNT Live: flat IP / MAC / Hostname workbook in the schema PiNT Live's *Load ARP List…* sidebar consumes |
 | **v1.5**| **Current** - mDNS IP now read directly from packet source address; removes active resolve step and Resolve IPs button; adds GitHub Actions Windows EXE build |
 | Future  | Integrated iPerf3 tester |
-| Future  | macOS support |
+| In validation | Native macOS app support and desktop refresh |
 
 ---
 
@@ -168,7 +241,7 @@ PiNT-Portable/
 - [x] **v1.4** - ARP tab gains a one-click XLSX export: flat single-sheet workbook with `IP Address`, `MAC Address` and `Hostname` columns, ready to drop into PiNT Live's *Load ARP List…* sidebar to enrich per-switch port documentation; default filename derived from the scanned subnet and date
 - [x] **v1.5** - mDNS IP detection now passive: sender's unicast IP is read directly from the IP layer of each mDNS response packet (`pkt[IP].src`), removing the need for active queries, hostname resolution chains, or the separate Resolve IPs button; GitHub Actions workflow added for automated Windows EXE builds
 - [ ] **Future** - Integrated iPerf3 tester
-- [ ] **Future** - macOS support
+- [ ] **In validation** - macOS support (source and build pipeline implemented; hardware acceptance and notarization pending)
 
 ---
 

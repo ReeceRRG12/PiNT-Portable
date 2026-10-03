@@ -76,14 +76,21 @@ def _base128(n):
 
 
 def _ber_oid(oid_str):
-    parts = list(map(int, oid_str.strip('.').split('.')))
+    arcs = oid_str.strip().strip('.').split('.')
+    if len(arcs) < 2 or any(not arc.isascii() or not arc.isdigit() for arc in arcs):
+        raise ValueError("Invalid OID: enter a dotted numeric OID, such as 1.3.6.1.2.1.1.1.0")
+    parts = list(map(int, arcs))
+    if parts[0] > 2 or (parts[0] < 2 and parts[1] > 39):
+        raise ValueError("Invalid OID: first arc must be 0, 1 or 2; second arc must be below 40 for 0 or 1")
     enc = _base128(40 * parts[0] + parts[1])
     for p in parts[2:]:
         enc += _base128(p)
     return _ber_tlv(0x06, bytes(enc))
 
 
-def _build_packet(pdu_tag, request_id, community, oid):
+def _build_packet(pdu_tag, request_id, community, oid, version=1):
+    if version not in (0, 1):
+        raise ValueError("Unsupported SNMP version: use 0 for v1 or 1 for v2c")
     varbind  = _ber_tlv(0x30, _ber_oid(oid) + _ber_null())
     varbinds = _ber_tlv(0x30, varbind)
     pdu = _ber_tlv(pdu_tag,
@@ -92,7 +99,7 @@ def _build_packet(pdu_tag, request_id, community, oid):
                    _ber_int(0) +   # error-index
                    varbinds)
     return _ber_tlv(0x30,
-                    _ber_int(1) +   # version 1 = SNMPv2c
+                    _ber_int(version) +   # 0 = SNMPv1, 1 = SNMPv2c
                     _ber_str(community) +
                     pdu)
 
@@ -189,13 +196,14 @@ def _parse_response(data):
 def snmp_get(host, community, oid, port=161, version=1, timeout=3):
     """
     SNMP GET a single OID.  Returns (value_str, error_str).
-    version arg is accepted for API compatibility but v2c is always used.
+    version is 0 for SNMPv1 or 1 for SNMPv2c.
     """
     req_id = os.getpid() & 0xFFFF
-    packet = _build_packet(0xA0, req_id, community, oid)   # GetRequest
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.settimeout(timeout)
+    sock = None
     try:
+        packet = _build_packet(0xA0, req_id, community, oid, version)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.settimeout(timeout)
         sock.sendto(packet, (host, port))
         data, _ = sock.recvfrom(65535)
         results = _parse_response(data)
@@ -205,7 +213,8 @@ def snmp_get(host, community, oid, port=161, version=1, timeout=3):
     except Exception as exc:
         return None, str(exc)
     finally:
-        sock.close()
+        if sock is not None:
+            sock.close()
 
 
 def snmp_walk(host, community, base_oid, port=161, version=1,
@@ -217,12 +226,14 @@ def snmp_walk(host, community, base_oid, port=161, version=1,
     """
     current = base_oid
     req_id  = os.getpid() & 0xFFFF
-    sock    = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.settimeout(timeout)
+    sock    = None
     try:
         while True:
             req_id = (req_id + 1) & 0xFFFF
-            packet = _build_packet(0xA1, req_id, community, current)  # GetNext
+            packet = _build_packet(0xA1, req_id, community, current, version)
+            if sock is None:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.settimeout(timeout)
             sock.sendto(packet, (host, port))
             data, _ = sock.recvfrom(65535)
             results = _parse_response(data)
@@ -244,4 +255,5 @@ def snmp_walk(host, community, base_oid, port=161, version=1,
         if row_callback:
             row_callback(None, None, str(exc))
     finally:
-        sock.close()
+        if sock is not None:
+            sock.close()

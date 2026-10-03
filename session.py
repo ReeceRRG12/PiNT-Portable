@@ -54,7 +54,7 @@ class SessionManager:
             "gateway":        ip_data.get("gateway", "Unknown"),
             "dns":            ", ".join(ip_data.get("dns", [])),
             "domain":         ip_data.get("domain", "Unknown"),
-            "dhcp_enabled":   ip_data.get("dhcp_enabled", False),
+            "dhcp_enabled":   ip_data.get("dhcp_enabled"),
             "dhcp_server":    ip_data.get("dhcp_server", "Unknown"),
             "lease_obtained": ip_data.get("lease_obtained", "Unknown"),
             "lease_expires":  ip_data.get("lease_expires", "Unknown"),

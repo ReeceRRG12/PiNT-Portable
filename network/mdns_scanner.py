@@ -50,6 +50,22 @@ ALWAYS_HIDDEN_SERVICE_TYPES = {
 MDNS_ADDR = "224.0.0.251"
 MDNS_PORT = 5353
 
+
+def _iter_records(section):
+    """Support Scapy's DNS record lists and older payload-linked records."""
+    records = section if isinstance(section, (list, tuple)) else (section,)
+    for rr in records:
+        while rr is not None and hasattr(rr, "type"):
+            yield rr
+            rr = getattr(rr, "payload", None)
+
+
+def _dns_name(value):
+    if isinstance(value, bytes):
+        value = value.decode("utf-8", errors="ignore")
+    return strip_local(str(value)).casefold()
+
+
 def send_mdns_queries(queries):
     for q in queries:
         try:
@@ -68,10 +84,11 @@ def send_mdns_queries(queries):
         except Exception as e:
             print(f"Send error for {q}: {e}")
 
-def scan_mdns(callback, timeout=30, iface=None):
+def scan_mdns(callback, timeout=30, iface=None, error_callback=None):
     devices = {}
     host_ip_map = {}
     srv_map = {}
+    stopped = threading.Event()
 
     queries = [
         "_airplay._tcp.local",
@@ -86,35 +103,27 @@ def scan_mdns(callback, timeout=30, iface=None):
     ]
 
     def delayed_queries():
-        import time
-        time.sleep(2)
-        send_mdns_queries(queries)
-        time.sleep(10)
-        send_mdns_queries(queries)
-        time.sleep(10)
-        send_mdns_queries(queries)
+        for delay in (2, 10, 10):
+            if stopped.wait(delay):
+                return
+            send_mdns_queries(queries)
 
     query_thread = threading.Thread(target=delayed_queries, daemon=True)
     query_thread.start()
 
-    def parse_rr_chain(rr):
-        while rr and hasattr(rr, 'type'):
+    def parse_rr_chain(section):
+        for rr in _iter_records(section):
             try:
-                rrname = strip_local(
-                    rr.rrname.decode("utf-8", errors="ignore")
-                    if isinstance(rr.rrname, bytes) else str(rr.rrname)
-                )
+                rrname = _dns_name(rr.rrname)
                 if rr.type == 1 and hasattr(rr, 'rdata'):
                     host_ip_map[rrname] = rr.rdata
+                elif rr.type == 28 and hasattr(rr, 'rdata'):
+                    # Keep an IPv4 address when both families are advertised.
+                    host_ip_map.setdefault(rrname, rr.rdata)
                 elif rr.type == 33 and hasattr(rr, 'target'):
-                    target = strip_local(
-                        rr.target.decode("utf-8", errors="ignore")
-                        if isinstance(rr.target, bytes) else str(rr.target)
-                    )
-                    srv_map[rrname] = target
-                rr = rr.payload if hasattr(rr, 'payload') else None
+                    srv_map[rrname] = _dns_name(rr.target)
             except Exception:
-                break
+                continue
 
     def handle_packet(pkt):
         try:
@@ -131,11 +140,8 @@ def scan_mdns(callback, timeout=30, iface=None):
                     parse_rr_chain(getattr(dns, section))
                 except Exception:
                     pass
-            if dns.ancount == 0:
-                return
-            for i in range(dns.ancount):
+            for rr in _iter_records(dns.an):
                 try:
-                    rr = dns.an[i]
                     if rr.type == 12:
                         raw = (rr.rdata.decode("utf-8", errors="ignore")
                                if isinstance(rr.rdata, bytes) else str(rr.rdata))
@@ -171,18 +177,29 @@ def scan_mdns(callback, timeout=30, iface=None):
                     "timeout": timeout, "store": False}
     if iface:
         sniff_kwargs["iface"] = iface
-    sniff(**sniff_kwargs)
+    try:
+        sniff(**sniff_kwargs)
+    except Exception as exc:
+        if error_callback is None:
+            raise
+        from network.capture import capture_error_message
+        error_callback(capture_error_message(exc))
+        return
+    finally:
+        stopped.set()
 
     _resolve_ips(devices, host_ip_map, srv_map)
     callback(list(devices.values()))
 
 
 def _resolve_ips(devices, host_ip_map, srv_map):
+    host_ip_map = {_dns_name(k): v for k, v in host_ip_map.items()}
+    srv_map = {_dns_name(k): _dns_name(v) for k, v in srv_map.items()}
     norm_ip_map = {normalise(k): v for k, v in host_ip_map.items()}
     for key, device in devices.items():
-        if device.get("ip") not in (None, "Unknown"):
-            continue
-        instance = device.get("instance", "")
+        # SRV/A/AAAA describe the service host, which may differ from a
+        # proxy or Bonjour gateway that sent the packet. Prefer those records.
+        instance = _dns_name(device.get("instance", ""))
         if instance in srv_map:
             hostname = srv_map[instance]
             if hostname in host_ip_map:
@@ -191,9 +208,10 @@ def _resolve_ips(devices, host_ip_map, srv_map):
         if instance in host_ip_map:
             device["ip"] = host_ip_map[instance]
             continue
+        if device.get("ip") not in (None, "Unknown"):
+            continue
         friendly = device.get("friendly", "")
         norm_friendly = normalise(friendly)
         if norm_friendly in norm_ip_map:
             device["ip"] = norm_ip_map[norm_friendly]
-
 

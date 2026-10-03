@@ -1,0 +1,44 @@
+name: Build macOS app
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            architecture: arm64
+          - runner: macos-15-intel
+            architecture: x64
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: ${{ matrix.architecture }}
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Offline regression tests
+        run: python -m unittest discover -s tests -v
+      - name: Verify runtime imports
+        run: python -c "import pint, psutil, network.platform_info, network.arp_scanner"
+      - name: Build app
+        run: python -m PyInstaller --noconfirm pint-macos.spec
+      - name: Verify bundle signature
+        run: codesign --verify --deep --strict dist/PiNT.app
+      - name: Archive app preserving symlinks
+        run: ditto -c -k --sequesterRsrc --keepParent dist/PiNT.app dist/PiNT-macos-${{ matrix.architecture }}.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pint-macos-${{ matrix.architecture }}
+          path: dist/PiNT-macos-${{ matrix.architecture }}.zip
+          retention-days: 30

@@ -1,5 +1,3 @@
-import subprocess
-import re
 import socket
 from scapy.all import (
     sniff, sendp, Ether, IP, UDP, BOOTP, DHCP,
@@ -36,100 +34,18 @@ FLAG_COLOURS = {
 }
 
 
-# ── ipconfig /all parser ──────────────────────────────────────────────────────
+# ── Native adapter configuration ─────────────────────────────────────────────
 
-def get_ip_config():
-    """
-    Run ipconfig /all and return a dict of the active adapter's details.
-    Picks the adapter that has a default gateway set.
-    """
-    result = {
-        "adapter":      "Unknown",
-        "ip":           "Unknown",
-        "subnet":       "Unknown",
-        "gateway":      "Unknown",
-        "dns":          [],
-        "dhcp_server":  "Unknown",
-        "dhcp_enabled": False,
-        "lease_obtained": "Unknown",
-        "lease_expires":  "Unknown",
-        "mac":          "Unknown",
-        "hostname":     "Unknown",
-        "domain":       "Unknown",
-    }
+def get_ip_config(iface=None):
+    """Read IP/DHCP metadata for exactly the adapter used by the scanners."""
+    from network.platform_info import get_platform_ip_config
 
-    try:
-        raw = subprocess.check_output(
-            ["ipconfig", "/all"],
-            encoding="utf-8",
-            errors="ignore",
-            creationflags=0x08000000   # CREATE_NO_WINDOW
-        )
-    except Exception as e:
-        result["error"] = str(e)
-        return result
-
-    # Hostname is at the top before adapter blocks
-    m = re.search(r"Host Name[.\s]+:\s*(.+)", raw)
-    if m:
-        result["hostname"] = m.group(1).strip()
-
-    # Split into adapter blocks
-    blocks = re.split(r"\r?\n(?=\S)", raw)
-
-    for block in blocks:
-        # We want the block that has a Default Gateway entry
-        if "Default Gateway" not in block:
-            continue
-        gw_match = re.search(r"Default Gateway[.\s]+:\s*([\d.]+)", block)
-        if not gw_match:
-            continue
-
-        result["gateway"] = gw_match.group(1).strip()
-
-        m = re.search(r"^(.+?)\s+adapter\s+(.+?):", block, re.MULTILINE)
-        if m:
-            result["adapter"] = m.group(2).strip()
-
-        m = re.search(r"Physical Address[.\s]+:\s*([\w-]+)", block)
-        if m:
-            result["mac"] = m.group(1).strip()
-
-        m = re.search(r"DHCP Enabled[.\s]+:\s*(\w+)", block)
-        if m:
-            result["dhcp_enabled"] = m.group(1).strip().lower() == "yes"
-
-        m = re.search(r"IPv4 Address[.\s]+:\s*([\d.]+)", block)
-        if m:
-            result["ip"] = m.group(1).strip()
-
-        m = re.search(r"Subnet Mask[.\s]+:\s*([\d.]+)", block)
-        if m:
-            result["subnet"] = m.group(1).strip()
-
-        m = re.search(r"DHCP Server[.\s]+:\s*([\d.]+)", block)
-        if m:
-            result["dhcp_server"] = m.group(1).strip()
-
-        m = re.search(r"Lease Obtained[.\s]+:\s*(.+)", block)
-        if m:
-            result["lease_obtained"] = m.group(1).strip()
-
-        m = re.search(r"Lease Expires[.\s]+:\s*(.+)", block)
-        if m:
-            result["lease_expires"] = m.group(1).strip()
-
-        m = re.search(r"Connection-specific DNS Suffix[.\s]+:\s*(.+)", block)
-        if m:
-            result["domain"] = m.group(1).strip()
-
-        dns_servers = re.findall(r"DNS Servers[.\s]+:\s*([\d.]+)", block)
-        extra_dns   = re.findall(r"^\s+([\d]{1,3}\.[\d]{1,3}\.[\d]{1,3}\.[\d]{1,3})\s*$",
-                                  block, re.MULTILINE)
-        result["dns"] = dns_servers + extra_dns
-
-        break   # found the active adapter — stop
-
+    selected = iface if iface is not None else conf.iface
+    obj = selected if hasattr(selected, "network_name") else conf.ifaces.get(selected)
+    name = getattr(obj, "network_name", None) or str(selected or "")
+    result = get_platform_ip_config(name, getattr(obj, "ip", None),
+                                    getattr(obj, "mac", None))
+    result["interface"] = name
     return result
 
 
