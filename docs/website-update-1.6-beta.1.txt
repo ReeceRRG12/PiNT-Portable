@@ -1,0 +1,11 @@
+PiNT Desktop 1.6 Beta 1 is now available for Windows and macOS.
+
+This update brings a refreshed dark interface with clearer text, grouped navigation, redesigned connection cards and sortable results tables. Window sizing and scaling have also been improved for laptop screens and high-DPI displays.
+
+PiNT now has native Mac app downloads for both Apple Silicon and Intel, alongside the Windows executable. Python is included in all three packages, so no separate Python installation is needed.
+
+Network adapter selection and IP information are more consistent across Windows and macOS, with clearer adapter names and improved handling of DNS and available DHCP details. Mac users can launch SSH connections through Terminal, while Windows continues to support PuTTY and OpenSSH.
+
+Scan timeouts and the monitor interval can now be saved between launches. Reliability fixes improve CDP management-address detection, respect the selected SNMP version, handle invalid SNMP OIDs cleanly and report the correct service address in mDNS responses forwarded by proxies or gateways. Clearer capture errors explain when additional setup is required.
+
+Version 1.6 is currently a beta. Version 1.5 remains the stable release. Windows packet capture requires Npcap, and Mac packet capture requires suitable BPF permissions. The Windows beta is unsigned, and the Mac apps are not yet Apple Developer ID signed or notarized, so security warnings or launch restrictions may apply. Testing on physical networks is still required before promoting the update to stable.

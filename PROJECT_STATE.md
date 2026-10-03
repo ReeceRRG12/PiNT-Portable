@@ -37,13 +37,27 @@ Stages: (1) protocol and platform correctness; (2) GUI integration;
 Finish condition: scoped implementation passes available checks and the tagged
 beta is published with all three verified packages and documented limitations.
 
-## Checkpoint — implementation verified, beta release preparation
+## Checkpoint — 1.6 Beta 1 published
 
 - Base: `a430f27`, matching `origin/main` when pulled. Review branch:
-  `codex/desktop-refresh-macos`, pull request #3. Refresh commit: `6a5c154`.
-- GitHub CI passed on the refresh commit: Windows x64 run `37157038514`,
-  macOS Apple Silicon and Intel run `37157038551`. Version 1.6 Beta 1 metadata
-  will be rebuilt and verified on the final main commit before publication.
+  `codex/desktop-refresh-macos`, merged pull request #3. Refresh commit: `6a5c154`.
+- Previous main is preserved on `stable` at `a430f273a73c408325765502463e1d285d470da9`.
+  Main received the refresh and version metadata in merge commit
+  `71c8b34600af70e2cb382347293b4ed4cf235162`, tagged `v1.6.0-beta.1`.
+- [PiNT Desktop 1.6 Beta 1](https://github.com/ReeceRRG12/PiNT-Portable/releases/tag/v1.6.0-beta.1)
+  was published on 3 October 2026 as a prerelease. GitHub still reports v1.5 as
+  the latest stable release.
+- Final main CI passed: [Windows x64](https://github.com/ReeceRRG12/PiNT-Portable/actions/runs/37157663206)
+  and [macOS Apple Silicon/Intel](https://github.com/ReeceRRG12/PiNT-Portable/actions/runs/37157663210).
+  Each download was built from the tagged merge commit.
+- Published assets: `PiNT-1.6-beta.1-windows-x64.exe`,
+  `PiNT-1.6-beta.1-macos-arm64.zip`, `PiNT-1.6-beta.1-macos-x64.zip`, and
+  `SHA256SUMS.txt`. All four upload sizes and SHA-256 digests matched locally
+  verified files. Windows x64 architecture, 1.6.0.1 fixed version, 1.6.0-beta.1
+  product version and prerelease flag were verified; it is unsigned.
+- Both Mac archives were extracted and verified: expected arm64/x86_64
+  architecture, version 1.6.0 / build 1.6.1, beta label, and valid ad-hoc signature.
+- Plain text website update: [docs/website-update-1.6-beta.1.txt](docs/website-update-1.6-beta.1.txt).
 - Fixed CDP address parsing, SNMP version and invalid OID handling, proxy mDNS
   addresses, missing psutil, and selected-adapter IP/DHCP consistency.
 - Added native Windows CIM and macOS SystemConfiguration readers, friendly Mac
@@ -62,7 +76,8 @@ beta is published with all three verified packages and documented limitations.
 - Built native Apple Silicon app using Python 3.14.4, CustomTkinter 6.0.0,
   Scapy 2.8.0, and PyInstaller 6.22.3. App and adapter chooser were visually
   verified after extracting the final ZIP. No scans were started.
-- Deliverable: `dist/PiNT-macos-arm64.zip` (about 22 MB). Verified with
+- Earlier local validation artifact: `dist/PiNT-macos-arm64.zip` (about 22 MB).
+  The published beta downloads above supersede this local build. Verified with
   `codesign --verify --deep --strict` after extraction. This is ad-hoc local
   signing, not Developer ID signing/notarization.
 - Build staging outside the Documents directory avoided Finder metadata that
@@ -73,12 +88,11 @@ beta is published with all three verified packages and documented limitations.
 - `git diff --check` passed. Capture, socket and terminal-launch tests used mocks;
   no live scans, privilege changes or driver installations were performed.
 
-## Next release action
+## Next action — stable release acceptance
 
-Preserve `a430f273a73c408325765502463e1d285d470da9` as `stable`; merge the versioned
-refresh to `main`; verify all three main CI packages, tag `v1.6.0-beta.1`, and
-publish them in a GitHub prerelease. Validate published asset names and hashes.
-Use GitHub release/tag and Actions records as the publication evidence.
+The requested beta publication is complete. The release/tag and Actions records
+linked above are the publication and build evidence. The checkpoint and website
+copy are documentation added after the release tag; they do not change the apps.
 
 Before promoting macOS support to stable: validate LLDP/CDP, ARP, mDNS, DHCP,
 SNMP v1/v2c and SSH on physical target hardware, confirm capture setup on clean
