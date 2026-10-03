@@ -1,7 +1,7 @@
 # Pi Network Tools - PiNT Desktop 🍺  
 (formally PiNT-Portable & Port Identifier) 
 
-![Version](https://img.shields.io/badge/version-v1.5-blue)
+![Version](https://img.shields.io/badge/version-1.6%20Beta%201-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey)
 ![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS%20%7C%20ARP%20%7C%20SNMP-green)
 [![Website](https://img.shields.io/badge/website-pinetworktools.com-blue)](https://pinetworktools.com)
@@ -41,9 +41,15 @@ A lightweight desktop network tool for field technicians, with Windows executabl
 
 Visit **[pinetworktools.com](https://pinetworktools.com)** for more info, screenshots and feature overview.
 
-Head to the [Releases](../../releases) page and download the latest `pint.exe`
+Download [PiNT Desktop 1.6 Beta 1](https://github.com/ReeceRRG12/PiNT-Portable/releases/tag/v1.6.0-beta.1):
 
-No Python required for packaged builds. The desktop refresh and macOS support described below are unreleased source changes; existing published releases may still be Windows-only.
+- Windows x64: `PiNT-1.6-beta.1-windows-x64.exe`
+- Mac with Apple Silicon: `PiNT-1.6-beta.1-macos-arm64.zip`
+- Mac with Intel: `PiNT-1.6-beta.1-macos-x64.zip`
+
+No Python installation is required. Extract the Mac ZIP to access `PiNT.app`.
+Version 1.6 is a beta for testing; [v1.5 remains the stable release](https://github.com/ReeceRRG12/PiNT-Portable/releases/tag/v1.5).
+The `stable` branch preserves the previous `main`; `main` contains the 1.6 update.
 
 ---
 
@@ -65,11 +71,14 @@ PiNT does not change capture permissions. Ordinary TCP/SNMP queries and reading 
 IP configuration do not require raw packet access. If access is missing, capture
 panels report a setup error rather than a misleading empty result.
 
-Mac builds are currently developer builds. Local ad-hoc signing is **not** Apple
-Developer ID signing or notarization; distribution signing and physical network
-capture testing remain release gates. CI defines separate Apple Silicon and Intel builds.
+The Windows beta executable is unsigned. Mac beta builds are ad-hoc signed,
+**not** Apple Developer ID signed or notarized, so operating-system security
+warnings or launch restrictions may apply. CI builds Windows x64, Apple Silicon
+and Intel packages and runs offline tests. Physical network capture acceptance
+testing and Apple distribution signing/notarization remain outstanding before
+promoting macOS support to a stable release.
 
-## Development refresh (unreleased)
+## What's new in 1.6 Beta 1
 
 - Fix CDP management IPv4 parsing, honor SNMP v1/v2c selection, and reject malformed OIDs.
 - Resolve mDNS proxy records using the service target's advertised address.
@@ -203,9 +212,9 @@ PiNT-Portable/
 | v1.2    | ARP Scanner, Port Scanner and SNMP Query tabs; dependency-free SNMP v1/v2c engine; unified cyan icon tinting |
 | v1.3    | Internal code refactor: centralised theme tokens, shared widget helpers in `gui/widgets.py`, scanners grouped into a `network/` package |
 | v1.4    | ARP tab XLSX export for PiNT Live: flat IP / MAC / Hostname workbook in the schema PiNT Live's *Load ARP List…* sidebar consumes |
-| **v1.5**| **Current** - mDNS IP now read directly from packet source address; removes active resolve step and Resolve IPs button; adds GitHub Actions Windows EXE build |
+| **v1.5**| **Stable** - mDNS IP read directly from packet source address; removes active resolve step and Resolve IPs button; adds GitHub Actions Windows EXE build |
+| **v1.6 Beta 1** | **Current beta** - refreshed desktop UI, native macOS packages for Apple Silicon and Intel, Windows adapter improvements, saved settings, and CDP/SNMP/mDNS fixes |
 | Future  | Integrated iPerf3 tester |
-| In validation | Native macOS app support and desktop refresh |
 
 ---
 
@@ -241,7 +250,8 @@ PiNT-Portable/
 - [x] **v1.4** - ARP tab gains a one-click XLSX export: flat single-sheet workbook with `IP Address`, `MAC Address` and `Hostname` columns, ready to drop into PiNT Live's *Load ARP List…* sidebar to enrich per-switch port documentation; default filename derived from the scanned subnet and date
 - [x] **v1.5** - mDNS IP detection now passive: sender's unicast IP is read directly from the IP layer of each mDNS response packet (`pkt[IP].src`), removing the need for active queries, hostname resolution chains, or the separate Resolve IPs button; GitHub Actions workflow added for automated Windows EXE builds
 - [ ] **Future** - Integrated iPerf3 tester
-- [ ] **In validation** - macOS support (source and build pipeline implemented; hardware acceptance and notarization pending)
+- [x] **v1.6 Beta 1** - refreshed desktop UI, native macOS packages, platform-aware adapter details, saved settings, and CDP/SNMP/mDNS fixes
+- [ ] **Before macOS stable** - physical-network acceptance testing and Apple distribution signing/notarization
 
 ---
 

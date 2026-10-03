@@ -26,8 +26,9 @@ app = BUNDLE(
     coll, name='PiNT.app', icon='logo.png', bundle_identifier='com.pinetworktools.pint',
     info_plist={
         'CFBundleDisplayName': 'PiNT',
-        'CFBundleShortVersionString': '1.5.0',
-        'CFBundleVersion': '1.5.0',
+        'CFBundleShortVersionString': '1.6.0',
+        'CFBundleVersion': '1.6.1',
+        'CFBundleGetInfoString': 'PiNT Desktop 1.6 Beta 1',
         'NSHighResolutionCapable': True,
         'NSLocalNetworkUsageDescription':
             'PiNT discovers switches and devices on the network you select.',
