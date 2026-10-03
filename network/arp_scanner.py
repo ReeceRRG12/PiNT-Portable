@@ -3,6 +3,7 @@ import ipaddress
 
 from scapy.all import ARP, Ether, srp, get_if_addr, conf
 import psutil
+from network.capture import capture_error_message
 
 
 def get_subnet_for_iface(iface):
@@ -31,7 +32,7 @@ def get_subnet_for_iface(iface):
         return None
 
 
-def scan_arp(network, iface=None, timeout=3, callback=None):
+def scan_arp(network, iface=None, timeout=3, callback=None, error_callback=None):
     """
     ARP-sweep *network* (CIDR string, e.g. '192.168.1.0/24').
 
@@ -59,8 +60,11 @@ def scan_arp(network, iface=None, timeout=3, callback=None):
 
         results.sort(key=lambda x: ipaddress.ip_address(x["ip"]))
 
-    except Exception:
-        results = []
+    except Exception as exc:
+        if error_callback:
+            error_callback(capture_error_message(exc))
+            return []
+        raise
 
     if callback:
         callback(results)

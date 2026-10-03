@@ -1,62 +1,40 @@
-import threading
 from scapy.all import sniff
+
+from network.capture import capture_error_message
 from network.lldp_parser import parse_lldp
 from network.cdp_parser import parse_cdp
 
-def scan(callback, timeout=30, iface=None):
+
+def scan(callback, timeout=30, iface=None, error_callback=None):
+    """Capture both protocols and complete once, with no leftover listeners."""
     result = {}
-    stop_event = threading.Event()
 
-    def lldp_handler(pkt):
-        if not stop_event.is_set():
+    def handle(pkt):
+        raw = bytes(pkt)
+        if len(raw) < 14:
+            return
+        if raw[12:14] == b"\x88\xcc":
             device = parse_lldp(pkt)
-            if device:
-                stop_event.set()
-                result.update(device)
-                callback(result)
-
-    def cdp_handler(pkt):
-        if not stop_event.is_set():
+        elif raw[:6] == b"\x01\x00\x0c\xcc\xcc\xcc":
             device = parse_cdp(pkt)
-            if device:
-                stop_event.set()
-                result.update(device)
-                callback(result)
+        else:
+            return
+        if device and any(device.get(k) not in (None, "", "Unknown")
+                          for k in ("name", "port", "ip", "chassis")):
+            result.update(device)
 
-    sniff_kwargs_lldp = {
-        "filter": "ether proto 0x88cc",
-        "prn": lldp_handler,
-        "store": 0,
-        "timeout": timeout,
-    }
-    sniff_kwargs_cdp = {
-        "filter": "ether dst 01:00:0c:cc:cc:cc",
-        "prn": cdp_handler,
-        "store": 0,
-        "timeout": timeout,
-    }
+    kwargs = dict(
+        filter="ether proto 0x88cc or ether dst 01:00:0c:cc:cc:cc",
+        prn=handle, stop_filter=lambda pkt: bool(result), store=False,
+        timeout=timeout,
+    )
     if iface:
-        sniff_kwargs_lldp["iface"] = iface
-        sniff_kwargs_cdp["iface"]  = iface
-
-    # Start LLDP listener thread
-    lldp_thread = threading.Thread(
-        target=sniff,
-        kwargs=sniff_kwargs_lldp,
-        daemon=True
-    )
-
-    # Start CDP listener thread
-    cdp_thread = threading.Thread(
-        target=sniff,
-        kwargs=sniff_kwargs_cdp,
-        daemon=True
-    )
-
-    lldp_thread.start()
-    cdp_thread.start()
-    lldp_thread.join()
-    cdp_thread.join()
-
-    if not result:
-        callback(None)
+        kwargs["iface"] = iface
+    try:
+        sniff(**kwargs)
+    except Exception as exc:
+        if error_callback:
+            error_callback(capture_error_message(exc))
+            return
+        raise
+    callback(result or None)

@@ -1,39 +1,45 @@
 import customtkinter as ctk
+import sys
+import tkinter as tk
 from tkinter import ttk
 
 
 def _scale() -> float:
+    root = tk._default_root
+    if root is not None and hasattr(root, "_get_widget_scaling"):
+        return root._get_widget_scaling()
     from gui.scale_manager import current_scale
     return current_scale()
 
 
 # ── Colours ───────────────────────────────────────────────────────────────────
 # Base palette
-BG      = "#1a1a2e"
-SIDEBAR = "#16213e"
-ACCENT  = "#00d4ff"
-PANEL   = "#16213e"
-DIVIDER = "#0f3460"
-FG      = "#eeeeee"
-FG_DIM  = "#888888"
-FG_HINT = "#555555"
-FG_MUTED = "#aaaaaa"
-FG_LABEL = "#666666"
-WARNING = "#ffaa00"
-SUCCESS = "#00ff88"
-ERROR   = "#ff4757"
+BG      = "#101722"
+SIDEBAR = "#131D2A"
+ACCENT  = "#62D6C7"
+PANEL   = "#192635"
+DIVIDER = "#2A3B4E"
+FG      = "#EDF3FA"
+FG_DIM  = "#A7B6C8"
+FG_HINT = "#98A9BE"
+FG_MUTED = "#BBC8D7"
+FG_LABEL = "#A7B6C8"
+WARNING = "#F3BD69"
+SUCCESS = "#7BDCB5"
+ERROR   = "#FF929B"
 
 # Interaction states
-ACCENT_HOVER = "#00b8d9"  # darker cyan — hover on primary (scan) buttons
-PANEL_HOVER  = "#1f2d45"  # subtle highlight — hover on secondary buttons / dropdowns
-NAV_BG       = "#111d2e"  # sidebar nav button background (inactive)
-NAV_ACTIVE   = "#1a3050"  # sidebar nav button background (selected)
-SELECT       = "#1f3a5c"  # Treeview row selection
+ACCENT_HOVER = "#80E2D5"
+PANEL_HOVER  = "#25384B"
+NAV_BG       = SIDEBAR
+NAV_ACTIVE   = "#233D46"
+SELECT       = "#2B4957"
 
 # Accent as an RGB tuple (for PIL image tinting where we can't pass a hex string)
-ACCENT_RGB = (0, 212, 255)
+ACCENT_RGB = (98, 214, 199)
 
-NAV_W = 210  # sidebar width at scale 1.0
+NAV_W = 212
+FONT_FAMILY = "Helvetica Neue" if sys.platform == "darwin" else "Segoe UI" if sys.platform == "win32" else "DejaVu Sans"
 
 
 # ── Fonts ─────────────────────────────────────────────────────────────────────
@@ -41,8 +47,8 @@ NAV_W = 210  # sidebar width at scale 1.0
 def font(size: int, weight: str = "normal") -> ctk.CTkFont:
     """CTkFont for CTk widgets — size is scaled automatically by CTk's widget scaling."""
     return ctk.CTkFont(
-        family="Arial",
-        size=size,
+        family=FONT_FAMILY,
+        size=max(12, size),
         weight="bold" if weight == "bold" else "normal",
         slant="italic" if weight == "italic" else "roman",
     )
@@ -50,19 +56,20 @@ def font(size: int, weight: str = "normal") -> ctk.CTkFont:
 
 def tk_font(size: int, weight: str = "normal") -> tuple:
     """Font tuple for ttk/tk widgets (Treeview, Entry, etc.) — manually scaled."""
-    scaled = max(8, round(size * _scale()))
+    # Negative sizes are pixels, matching CTkFont; positive Tk sizes are points.
+    scaled = -max(10, round(max(12, size) * _scale()))
     if weight == "bold":
-        return ("Arial", scaled, "bold")
+        return (FONT_FAMILY, scaled, "bold")
     if weight == "italic":
-        return ("Arial", scaled, "italic")
-    return ("Arial", scaled)
+        return (FONT_FAMILY, scaled, "italic")
+    return (FONT_FAMILY, scaled)
 
 
 # ── Treeview ──────────────────────────────────────────────────────────────────
 
 def apply_treeview_style(style: ttk.Style) -> None:
     """Dark PiNT styling for all ttk.Treeview widgets via the PiNT.Treeview style."""
-    row_h = max(22, round(26 * _scale()))
+    row_h = max(26, round(34 * _scale()))
     style.configure("PiNT.Treeview",
                     background=PANEL,
                     foreground=FG,
@@ -73,12 +80,14 @@ def apply_treeview_style(style: ttk.Style) -> None:
                     darkcolor=PANEL,
                     bordercolor=PANEL,
                     rowheight=row_h,
-                    font=tk_font(10))
+                    font=tk_font(13))
     style.configure("PiNT.Treeview.Heading",
-                    background=DIVIDER,
-                    foreground=ACCENT,
+                    background=SIDEBAR,
+                    foreground=FG_MUTED,
                     borderwidth=0,
-                    font=tk_font(10, "bold"))
+                    padding=(10, 10),
+                    relief="flat",
+                    font=tk_font(12, "bold"))
     style.map("PiNT.Treeview",
               background=[("selected", SELECT)],
               foreground=[("selected", FG)])
@@ -91,7 +100,7 @@ def apply_progressbar_style(style: ttk.Style) -> None:
     style.configure("Scan.Horizontal.TProgressbar",
                     troughcolor=PANEL, background=ACCENT,
                     bordercolor=PANEL, lightcolor=ACCENT,
-                    darkcolor=ACCENT, thickness=6)
+                    darkcolor=ACCENT, thickness=3)
 
 
 def apply_scrollbar_style(style: ttk.Style) -> None:

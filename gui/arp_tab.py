@@ -1,6 +1,7 @@
 import tkinter as tk
 import threading
 import os
+import ipaddress
 from datetime import datetime
 from tkinter import filedialog
 
@@ -112,6 +113,13 @@ class ArpTab:
             return
 
         try:
+            network = str(ipaddress.IPv4Network(network, strict=False))
+        except ValueError:
+            self._status.configure(text="Enter a valid IPv4 subnet, such as 192.168.1.0/24",
+                                   text_color=theme.ERROR)
+            return
+
+        try:
             timeout = max(1, int(self._timeout_var.get()))
         except ValueError:
             timeout = 3
@@ -127,17 +135,26 @@ class ArpTab:
         self._detail.configure(text="")
         self._progress.start(10)
 
+        iface = self._state.selected_iface
         threading.Thread(
             target=self._run_scan,
-            args=(network, timeout),
+            args=(network, timeout, iface),
             daemon=True).start()
 
-    def _run_scan(self, network, timeout):
-        from network.arp_scanner import scan_arp
-        scan_arp(network,
-                 iface=self._state.selected_iface,
-                 timeout=timeout,
-                 callback=lambda r: self._root.after(0, self._update_ui, r))
+    def _run_scan(self, network, timeout, iface):
+        try:
+            from network.arp_scanner import scan_arp
+            scan_arp(network, iface=iface, timeout=timeout,
+                     callback=lambda r: self._root.after(0, self._update_ui, r),
+                     error_callback=lambda e: self._root.after(0, self._scan_error, e))
+        except Exception as exc:
+            self._root.after(0, self._scan_error, str(exc))
+
+    def _scan_error(self, message):
+        self._progress.stop()
+        self._status.configure(text="Scan failed — see details below", text_color=theme.ERROR)
+        self._detail.configure(text=message)
+        self._scan_btn.configure(state="normal")
 
     def _update_ui(self, results):
         self._progress.stop()

@@ -44,18 +44,28 @@ class IpTab:
             text_color=theme.WARNING)
         for w in self._inner.winfo_children():
             w.destroy()
-        threading.Thread(target=self._run_scan, daemon=True).start()
+        # Capture selection now so adapter changes cannot mix two networks.
+        threading.Thread(target=self._run_scan,
+                         args=(self._state.selected_iface,), daemon=True).start()
 
-    def _run_scan(self):
-        from network.ip_info import get_ip_config, get_dhcp_options
-        ip_data   = get_ip_config()
-        dhcp_opts = (get_dhcp_options(timeout=10, iface=self._state.selected_iface)
-                     if ip_data.get("dhcp_enabled") else [])
+    def _run_scan(self, iface):
+        try:
+            from network.ip_info import get_ip_config, get_dhcp_options
+            ip_data = get_ip_config(iface)
+            dhcp_opts = (get_dhcp_options(timeout=10, iface=ip_data.get("interface", iface))
+                         if ip_data.get("dhcp_enabled") is True and not ip_data.get("error") else [])
+        except Exception as exc:
+            ip_data, dhcp_opts = {"error": str(exc)}, []
         self._root.after(0, self._update_ui, ip_data, dhcp_opts)
 
     def _update_ui(self, ip_data, dhcp_opts):
         from network.ip_info import FLAG_COLOURS
         parent = self._inner
+
+        if ip_data.get("error"):
+            self.status.configure(text=ip_data["error"], text_color=theme.ERROR)
+            self.scan_btn.configure(state="normal")
+            return
 
         self._section(parent, "IP Configuration")
 
@@ -76,10 +86,10 @@ class IpTab:
 
         self._section(parent, "DHCP")
 
-        enabled = ip_data.get("dhcp_enabled", False)
+        enabled = ip_data.get("dhcp_enabled")
         self._row(parent, "DHCP Enabled",
-                  "Yes" if enabled else "No",
-                  value_colour=theme.SUCCESS if enabled else theme.ERROR)
+                  "Yes" if enabled is True else "No" if enabled is False else "Unavailable",
+                  value_colour=theme.SUCCESS if enabled is True else theme.FG_DIM)
 
         if enabled:
             self._row(parent, "DHCP Server",    ip_data.get("dhcp_server",    "Unknown"))
@@ -109,14 +119,19 @@ class IpTab:
                              text="No scope options returned by DHCP server.",
                              fg_color="transparent", text_color=theme.FG_DIM,
                              font=theme.font(10)).pack(padx=10, pady=4, anchor="w")
-        else:
+        elif enabled is False:
             ctk.CTkLabel(parent, text="DHCP is not enabled on this adapter.",
                          fg_color="transparent", text_color=theme.FG_DIM,
                          font=theme.font(10)).pack(padx=10, pady=4, anchor="w")
 
         self._state.session.add_ip_snapshot(ip_data, dhcp_opts)
+        probe_error = next((value for number, label, value, flag in dhcp_opts
+                            if number == 0 and label == "Error"), None)
+        warning = ip_data.get("warning") or (
+            f"IP information loaded; DHCP query failed: {probe_error}" if probe_error else None)
         self.status.configure(
-            text="✅ IP & DHCP information loaded", text_color=theme.SUCCESS)
+            text=warning or "IP & DHCP information loaded",
+            text_color=theme.WARNING if warning else theme.SUCCESS)
         self.scan_btn.configure(state="normal")
 
     # ── Widget helpers ────────────────────────────────────────────────────────

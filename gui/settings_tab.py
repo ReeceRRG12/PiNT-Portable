@@ -21,7 +21,7 @@ class SettingsTab:
                      font=theme.font(14, "bold")).pack(anchor="w", pady=(0, 4))
 
         ctk.CTkLabel(frame,
-                     text="Changes take effect immediately on the next scan or monitor start.",
+                     text="Preferences are saved for your next visit and used on the next scan.",
                      fg_color="transparent", text_color=theme.FG_HINT,
                      font=theme.font(9, "italic")).pack(anchor="w", pady=(0, 16))
 
@@ -95,5 +95,11 @@ class SettingsTab:
         s.port_timeout    = self._port_var.get()
         s.mdns_timeout    = self._mdns_var.get()
         s.monitor_poll_ms = self._poll_var.get() * 1000
-        self._feedback.configure(text="✅ Settings applied")
+        try:
+            s.save()
+        except OSError:
+            self._feedback.configure(text="Applied for this session; preferences could not be saved.",
+                                     text_color=theme.WARNING)
+            return
+        self._feedback.configure(text="Settings saved", text_color=theme.SUCCESS)
         self._root.after(2500, lambda: self._feedback.configure(text=""))

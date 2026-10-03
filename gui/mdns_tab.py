@@ -107,13 +107,22 @@ class MdnsTab:
         self._results = []
         self._detail.configure(text="")
         self._progress.start(10)
-        threading.Thread(target=self._run_scan, daemon=True).start()
+        threading.Thread(target=self._run_scan,
+                         args=(timeout, self._state.selected_iface), daemon=True).start()
 
-    def _run_scan(self):
-        from network.mdns_scanner import scan_mdns
-        scan_mdns(self._handle_result,
-                  timeout=self._state.settings.mdns_timeout,
-                  iface=self._state.selected_iface)
+    def _run_scan(self, timeout, iface):
+        try:
+            from network.mdns_scanner import scan_mdns
+            scan_mdns(self._handle_result, timeout=timeout, iface=iface,
+                      error_callback=lambda e: self._root.after(0, self._scan_error, e))
+        except Exception as exc:
+            self._root.after(0, self._scan_error, str(exc))
+
+    def _scan_error(self, message):
+        self._progress.stop()
+        self.status.configure(text="Discovery failed — see details below", text_color=theme.ERROR)
+        self._detail.configure(text=message)
+        self.scan_btn.configure(state="normal")
 
     def _handle_result(self, devices):
         self._root.after(0, self._update_ui, devices)

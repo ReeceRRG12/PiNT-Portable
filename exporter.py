@@ -149,12 +149,13 @@ def _build_ip_sheet(wb, ip_snapshots):
             snap["gateway"],
             snap["dns"],
             snap["domain"],
-            "Yes" if snap["dhcp_enabled"] else "No",
+            "Yes" if snap["dhcp_enabled"] is True else "No" if snap["dhcp_enabled"] is False else "Unavailable",
             snap["dhcp_server"],
             snap["lease_obtained"],
             snap["lease_expires"],
         ]
-        dhcp_col = C_FG_GREEN if snap["dhcp_enabled"] else C_FG_RED
+        dhcp_col = (C_FG_GREEN if snap["dhcp_enabled"] is True else
+                    C_FG_RED if snap["dhcp_enabled"] is False else C_FG_DEFAULT)
         colours = [C_FG_DEFAULT] * 9 + [dhcp_col] + [C_FG_DEFAULT] * 3
         _apply_data_row(ws, i, values, colours)
 
