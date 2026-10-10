@@ -44,12 +44,40 @@ checks provide evidence for this scope, not a guarantee that all bugs are absent
 - No live-network acceptance, visual GUI validation, package rebuild, or Windows
   execution was performed in this task. Existing stable-release gates still apply.
 
-Current stage: versioned source and release notes prepared for Beta 2. Next action:
-verify and commit, push main without force, require passing Windows/macOS CI for
-that exact commit, verify packaged artifacts, tag, and publish the prerelease with
-checksums. Finish condition: all three downloads published and verified against
-the tagged main commit. Physical-network acceptance remains required before stable
-promotion; these checks do not establish that the application is free of bugs.
+## Release checkpoint — 1.6 Beta 2 published, 10 October 2026
+
+- Reece explicitly authorized overriding the usage reserve to finish this release.
+  The override applied to final verification/publication; normal reserve rules
+  resume for subsequent work.
+- Bugfix/version commit `c0711e02abf85131a2f21e4d1a7df69f00c33c43` was pushed
+  to main without force and is the exact target of annotated tag `v1.6.0-beta.2`.
+- [PiNT Desktop 1.6 Beta 2](https://github.com/ReeceRRG12/PiNT-Portable/releases/tag/v1.6.0-beta.2)
+  was published on 10 October 2026 at 17:13 BST (16:13 UTC) as a prerelease.
+  GitHub still identifies v1.5 as the latest stable release.
+- Exact-commit CI passed:
+  [Windows x64](https://github.com/ReeceRRG12/PiNT-Portable/actions/runs/38066471022),
+  [macOS arm64/x64](https://github.com/ReeceRRG12/PiNT-Portable/actions/runs/38066470997).
+  Workflows ran regression/import checks and packaged the app. Local suite:
+  70 tests, 69 passed and one Windows-only check skipped on Mac.
+- Windows executable verified: x64, fixed/product version 1.6.0.2,
+  product string 1.6.0-beta.2 and prerelease flag. No embedded signature.
+- Both Mac archives passed ZIP integrity checks and were extracted with ditto.
+  Info.plists report version 1.6.0/build 1.6.2 and Beta 2. All 81 Mach-O files
+  per package have the expected architecture (arm64 or x86_64). Both extracted
+  apps passed `codesign --verify --deep --strict`. These remain ad-hoc signatures.
+- Published assets: `PiNT-1.6-beta.2-windows-x64.exe`,
+  `PiNT-1.6-beta.2-macos-arm64.zip`, `PiNT-1.6-beta.2-macos-x64.zip`, and
+  `SHA256SUMS.txt`. All four remote upload sizes and SHA-256 digests matched the
+  verified local files before and after publication; remote tag target verified.
+- Local artifacts/manifests are in `/tmp/pint-release-beta2`; durable build evidence
+  and downloads are the GitHub runs/release linked above. Committed release notes:
+  `docs/release-notes-1.6-beta.2.md`.
+- This final checkpoint is documentation after the release tag; it does not alter
+  the released binaries. No live scans or physical-network acceptance were run.
+
+Current stage: requested bugfix release complete. Next action before stable
+promotion remains physical Windows/macOS network acceptance and Apple Developer
+ID signing/notarization. Passing tests and builds do not guarantee zero bugs.
 
 ## Brief
 
