@@ -27,8 +27,8 @@ app = BUNDLE(
     info_plist={
         'CFBundleDisplayName': 'PiNT',
         'CFBundleShortVersionString': '1.6.0',
-        'CFBundleVersion': '1.6.1',
-        'CFBundleGetInfoString': 'PiNT Desktop 1.6 Beta 1',
+        'CFBundleVersion': '1.6.2',
+        'CFBundleGetInfoString': 'PiNT Desktop 1.6 Beta 2',
         'NSHighResolutionCapable': True,
         'NSLocalNetworkUsageDescription':
             'PiNT discovers switches and devices on the network you select.',

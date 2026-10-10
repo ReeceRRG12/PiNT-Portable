@@ -199,12 +199,16 @@ class MdnsTab:
         )
         if not filepath:
             return
-        with open(filepath, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(["Device Name", "Service Type", "IP Address", "Raw"])
-            for d in self._results:
-                writer.writerow([d.get("friendly",""), d.get("type",""),
-                                  d.get("ip",""),      d.get("raw","")])
+        try:
+            with open(filepath, "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(["Device Name", "Service Type", "IP Address", "Raw"])
+                for d in self._results:
+                    writer.writerow([d.get("friendly",""), d.get("type",""),
+                                      d.get("ip",""),      d.get("raw","")])
+        except (OSError, UnicodeError) as exc:
+            self.status.configure(text=f"Export failed: {exc}", text_color=theme.ERROR)
+            return
         self.status.configure(
             text=f"✅ Exported to {os.path.basename(filepath)}",
             text_color=theme.SUCCESS)

@@ -72,7 +72,9 @@ class ExportTab:
 
         for entry in session.ip_snapshots:
             summary = (f"{entry['ip']} via {entry['dhcp_server']}"
-                       if entry["dhcp_enabled"] else f"{entry['ip']} (static)")
+                       if entry["dhcp_enabled"] is True else
+                       f"{entry['ip']} (static)" if entry["dhcp_enabled"] is False else
+                       f"{entry['ip']} (DHCP status unavailable)")
             self._tree.insert("", "end",
                                values=(entry["timestamp"], "IP Snapshot", summary))
 

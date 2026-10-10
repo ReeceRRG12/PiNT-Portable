@@ -1,5 +1,56 @@
 # PiNT desktop refresh
 
+## Current maintenance task — 10 October 2026
+
+Requested outcome: pull the latest code, review it for bugs, and fix confirmed
+defects. Fetched `origin`; `origin/main` and this clean worktree both started at
+`45531cb`. Fast-forward integration reported already up to date.
+
+Scope: bounded protocol, platform, GUI and export correctness review, with offline
+regressions for confirmed defects. Retain the existing architecture and release
+gates; no live network scans. On 10 October Reece authorized pushing these fixes
+to main and publishing a new version. Release target: `v1.6.0-beta.2`, titled
+PiNT Desktop 1.6 Beta 2, with Windows x64 and macOS arm64/x64 packages. Keep it
+a prerelease until the existing hardware/signing gates are satisfied. Finish when the fixes pass
+available tests and the remaining platform/hardware limits are recorded. Passing
+checks provide evidence for this scope, not a guarantee that all bugs are absent.
+
+## Checkpoint — maintenance review verified, 10 October 2026
+
+- Source remains based on `45531cb3c7b9a8fe68197ed86e3c6136f1beb186`, matching
+  freshly fetched `origin/main`. Changes are local and uncommitted on
+  `codex/release-1.6-checkpoint`; nothing was pushed or published.
+- Fixed SNMP OID decoding, truncated BER acceptance, and WALK subtree/progress
+  checks; blank LLDP descriptions no longer abort discovery.
+- DHCP capture starts before sending INFORM, matches transaction/client, and
+  preserves multiple DNS/router addresses and classless routes.
+- TCP hostname failures now report errors instead of zero open ports; sockets
+  close on exceptions, controls recover, and results keep the scanned hostname.
+- Monitor keeps the selected adapter instead of silently falling back to Wi-Fi;
+  Change Adapter can return to Auto-detect. Unknown DHCP stays unknown in summaries.
+- XLSX exports preserve discovered text as text (including leading `=` and Excel
+  error-like strings) and remove XML-invalid control characters. mDNS CSV exports
+  use UTF-8 and report file-write failures.
+- Added 30 regression tests. Final command:
+  `/tmp/pint-bugcheck-20261010/bin/python -m unittest discover -s tests -v`
+  ran 70 tests: 69 passed, one Windows-only PowerShell parser check skipped on Mac.
+  Protocol/export defects were reproduced against the original code before fixes.
+- Runtime imports, byte compilation, Python 3.11 syntax compatibility, dependency
+  consistency (`pip check`), and `git diff --check` passed. Tests ran in an isolated
+  Python 3.14.4 environment installed from the existing requirements.
+- Final suite uses mocked network I/O and explicit packet addresses. An earlier
+  DHCP fixture attempted implicit ARP resolution and failed to open BPF in the
+  sandbox; corrected before final verification, which emitted no capture warnings.
+- No live-network acceptance, visual GUI validation, package rebuild, or Windows
+  execution was performed in this task. Existing stable-release gates still apply.
+
+Current stage: versioned source and release notes prepared for Beta 2. Next action:
+verify and commit, push main without force, require passing Windows/macOS CI for
+that exact commit, verify packaged artifacts, tag, and publish the prerelease with
+checksums. Finish condition: all three downloads published and verified against
+the tagged main commit. Physical-network acceptance remains required before stable
+promotion; these checks do not establish that the application is free of bugs.
+
 ## Brief
 
 Purpose: make PiNT a more reliable, readable desktop network utility on Windows

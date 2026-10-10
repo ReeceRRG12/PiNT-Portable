@@ -2,6 +2,7 @@ import csv
 import os
 from datetime import datetime
 from openpyxl import Workbook
+from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 from openpyxl.styles import (
     PatternFill, Font, Alignment, Border, Side
 )
@@ -50,7 +51,13 @@ def _apply_header_row(ws, row_num, values, col_widths=None):
 def _apply_data_row(ws, row_num, values, colours=None):
     bg = C_ROW_BG_ODD if row_num % 2 == 1 else C_ROW_BG_EVEN
     for col, val in enumerate(values, start=1):
+        # Captured device text may contain XML-invalid control characters.
+        # Keep it literal even when it looks like an Excel formula or error.
+        if isinstance(val, str):
+            val = ILLEGAL_CHARACTERS_RE.sub("", val)
         cell = ws.cell(row=row_num, column=col, value=val)
+        if isinstance(val, str):
+            cell.data_type = "s"
         cell.fill      = _fill(bg)
         fg = colours[col - 1] if colours and col - 1 < len(colours) else C_FG_DEFAULT
         cell.font      = _font(fg)

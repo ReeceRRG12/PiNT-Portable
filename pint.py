@@ -122,7 +122,7 @@ class PiNTApp:
         ctk.CTkFrame(footer, fg_color=theme.DIVIDER, height=1, corner_radius=0).pack(fill="x", pady=(0, 10))
         self._nav_btn(footer, "settings", self._icons["settings"], "Settings")
         self._nav_btn(footer, "about", self._icons["about"], "About")
-        ctk.CTkLabel(footer, text="PiNT Desktop  /  v1.6 Beta 1", text_color=theme.FG_HINT,
+        ctk.CTkLabel(footer, text="PiNT Desktop  /  v1.6 Beta 2", text_color=theme.FG_HINT,
                      font=theme.font(12), anchor="w").pack(fill="x", padx=12, pady=(10, 0))
 
         # Navigation remains reachable on shorter laptop screens.
@@ -270,7 +270,7 @@ class PiNTApp:
                      fg_color="transparent", text_color=theme.ACCENT,
                      font=ctk.CTkFont("Arial", 16, weight="bold")).pack()
 
-        ctk.CTkLabel(frame, text="Version 1.6 Beta 1",
+        ctk.CTkLabel(frame, text="Version 1.6 Beta 2",
                      fg_color="transparent", text_color=theme.FG_DIM,
                      font=ctk.CTkFont("Arial", 12)).pack(pady=(3, 0))
 
@@ -321,8 +321,7 @@ class PiNTApp:
 
     def _change_interface(self):
         picker = InterfacePicker(self.root, force=True)
-        if picker.result is not None:
-            self._state.selected_iface = picker.result
+        self._state.selected_iface = picker.result
         self._iface_label.configure(text=get_iface_display(self._state.selected_iface))
 
 

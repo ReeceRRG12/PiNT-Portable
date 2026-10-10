@@ -75,13 +75,18 @@ def _base128(n):
     return b
 
 
-def _ber_oid(oid_str):
+def _oid_parts(oid_str):
     arcs = oid_str.strip().strip('.').split('.')
     if len(arcs) < 2 or any(not arc.isascii() or not arc.isdigit() for arc in arcs):
         raise ValueError("Invalid OID: enter a dotted numeric OID, such as 1.3.6.1.2.1.1.1.0")
     parts = list(map(int, arcs))
     if parts[0] > 2 or (parts[0] < 2 and parts[1] > 39):
         raise ValueError("Invalid OID: first arc must be 0, 1 or 2; second arc must be below 40 for 0 or 1")
+    return tuple(parts)
+
+
+def _ber_oid(oid_str):
+    parts = _oid_parts(oid_str)
     enc = _base128(40 * parts[0] + parts[1])
     for p in parts[2:]:
         enc += _base128(p)
@@ -107,10 +112,16 @@ def _build_packet(pdu_tag, request_id, community, oid, version=1):
 # ── BER decoding ──────────────────────────────────────────────────────────────
 
 def _parse_len(data, off):
+    if off >= len(data):
+        raise ValueError("Truncated BER length")
     first = data[off]; off += 1
     if first & 0x80 == 0:
         return first, off
     nb = first & 0x7f
+    if nb == 0:
+        raise ValueError("Indefinite BER lengths are not supported")
+    if off + nb > len(data):
+        raise ValueError("Truncated BER length")
     n = 0
     for _ in range(nb):
         n = (n << 8) | data[off]; off += 1
@@ -118,19 +129,29 @@ def _parse_len(data, off):
 
 
 def _parse_tlv(data, off):
+    if off >= len(data):
+        raise ValueError("Truncated BER value")
     tag = data[off]; off += 1
     length, off = _parse_len(data, off)
+    if off + length > len(data):
+        raise ValueError("Truncated BER value")
     return tag, data[off:off + length], off + length
 
 
 def _decode_oid(raw):
-    parts = [raw[0] // 40, raw[0] % 40]
-    i, n = 1, 0
-    while i < len(raw):
-        b = raw[i]; i += 1
+    if not raw or raw[-1] & 0x80:
+        raise ValueError("Truncated BER OID")
+    subidentifiers = []
+    n = 0
+    for b in raw:
         n = (n << 7) | (b & 0x7f)
         if b & 0x80 == 0:
-            parts.append(n); n = 0
+            subidentifiers.append(n); n = 0
+    # The first two arcs share one base-128 subidentifier; root 2 permits
+    # an arbitrarily large second arc, so the first byte alone is insufficient.
+    first = subidentifiers[0]
+    root = min(first // 40, 2)
+    parts = [root, first - 40 * root] + subidentifiers[1:]
     return '.'.join(map(str, parts))
 
 
@@ -224,10 +245,12 @@ def snmp_walk(host, community, base_oid, port=161, version=1,
 
     row_callback(oid_str, value_str, error_str) — error_str is None on success.
     """
-    current = base_oid
     req_id  = os.getpid() & 0xFFFF
     sock    = None
     try:
+        base_parts = _oid_parts(base_oid)
+        current_parts = base_parts
+        current = '.'.join(map(str, base_parts))
         while True:
             req_id = (req_id + 1) & 0xFFFF
             packet = _build_packet(0xA1, req_id, community, current, version)
@@ -240,15 +263,17 @@ def snmp_walk(host, community, base_oid, port=161, version=1,
             if not results:
                 break
             oid_str, val_str = results[0]
-            if not oid_str.startswith(base_oid):
+            oid_parts = _oid_parts(oid_str)
+            if oid_parts[:len(base_parts)] != base_parts:
                 break
             if val_str in ('(endOfMibView)', '(noSuchObject)', '(noSuchInstance)'):
                 break
-            if oid_str == current:      # guard against infinite loop
+            if oid_parts <= current_parts:  # reject repeats and backwards cycles
                 break
             if row_callback:
                 row_callback(oid_str, val_str, None)
             current = oid_str
+            current_parts = oid_parts
     except socket.timeout:
         pass                            # normal end-of-walk
     except Exception as exc:

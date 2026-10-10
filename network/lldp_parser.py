@@ -40,7 +40,7 @@ def parse_lldp(pkt):
         elif tlv_type == 6:  # System Description
             raw_desc = value.decode("utf-8", errors="ignore").strip()
             # Trim kernel strings — take only the first line
-            device["description"] = raw_desc.splitlines()[0][:80]
+            device["description"] = raw_desc.splitlines()[0][:80] if raw_desc else ""
 
         elif tlv_type == 8:  # Management Address
             if len(value) >= 6 and value[1] == 1:  # subtype 1 = IPv4

@@ -1,4 +1,5 @@
 import threading
+import socket
 
 import customtkinter as ctk
 from gui import theme, widgets
@@ -6,28 +7,44 @@ from gui import theme, widgets
 
 def _find_psutil_iface(selected_scapy_iface):
     """
-    Map a scapy interface name to a psutil interface name by matching IP addresses.
-    Falls back to the first non-loopback interface if no match is found.
+    Match an explicit adapter by name, MAC or a unique IP address.
+    Only auto-detect may fall back to the first active non-loopback adapter.
     """
     import psutil
 
-    target_ip = None
+    addrs = psutil.net_if_addrs()
     if selected_scapy_iface:
+        if selected_scapy_iface in addrs:
+            return selected_scapy_iface
+        iface_obj = None
         try:
             from scapy.all import conf
             iface_obj = conf.ifaces.get(selected_scapy_iface)
-            if iface_obj:
-                target_ip = getattr(iface_obj, 'ip', None)
         except Exception:
             pass
+        native_name = getattr(iface_obj, 'name', None)
+        if native_name in addrs:
+            return native_name
 
-    addrs = psutil.net_if_addrs()
+        def _mac(value):
+            return str(value or '').replace(':', '').replace('-', '').lower()
 
-    if target_ip:
-        for name, addr_list in addrs.items():
-            for addr in addr_list:
-                if addr.address == target_ip:
-                    return name
+        target_mac = _mac(getattr(iface_obj, 'mac', None))
+        if len(target_mac) == 12 and target_mac != '000000000000':
+            matches = [name for name, rows in addrs.items()
+                       if any(addr.family == psutil.AF_LINK and
+                              _mac(addr.address) == target_mac for addr in rows)]
+            if len(matches) == 1:
+                return matches[0]
+
+        target_ip = getattr(iface_obj, 'ip', None)
+        if target_ip and target_ip != '0.0.0.0':
+            matches = [name for name, rows in addrs.items()
+                       if any(addr.family == socket.AF_INET and
+                              addr.address == target_ip for addr in rows)]
+            if len(matches) == 1:
+                return matches[0]
+        return None
 
     # Fallback: first adapter that has an IPv4 address and is up
     stats = psutil.net_if_stats()
@@ -35,7 +52,8 @@ def _find_psutil_iface(selected_scapy_iface):
         if not stats.get(name, None) or not stats[name].isup:
             continue
         for addr in addr_list:
-            if '.' in addr.address and not addr.address.startswith('127.'):
+            if (addr.family == socket.AF_INET and addr.address != '0.0.0.0'
+                    and not addr.address.startswith('127.')):
                 return name
 
     return None

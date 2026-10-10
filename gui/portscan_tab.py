@@ -13,6 +13,7 @@ class PortScanTab:
         self._root    = root
         self._state   = app_state
         self._results = []
+        self._scan_host = None
         self._build(parent)
 
     def _build(self, parent):
@@ -169,6 +170,7 @@ class PortScanTab:
         for row in self._tree.get_children():
             self._tree.delete(row)
         self._results = []
+        self._scan_host = host
         self._detail.configure(text="")
 
         threading.Thread(
@@ -177,15 +179,22 @@ class PortScanTab:
             daemon=True).start()
 
     def _run_scan(self, host, ports, timeout):
-        from network.port_scanner import scan_ports
-
         def _progress(completed, total):
             pct = int(completed / total * 100) if total else 100
             self._root.after(0, self._set_progress, pct)
 
-        scan_ports(host, ports, timeout=timeout,
-                   progress_callback=_progress,
-                   done_callback=lambda r: self._root.after(0, self._update_ui, r))
+        try:
+            from network.port_scanner import scan_ports
+            scan_ports(host, ports, timeout=timeout,
+                       progress_callback=_progress,
+                       done_callback=lambda r: self._root.after(0, self._update_ui, r))
+        except Exception as exc:
+            self._root.after(0, self._scan_error, str(exc))
+
+    def _scan_error(self, message):
+        self._status.configure(text="Scan failed — see details below", text_color=theme.ERROR)
+        self._detail.configure(text=message)
+        self._scan_btn.configure(state="normal")
 
     def _set_progress(self, pct):
         self._progress["value"] = pct
@@ -197,7 +206,7 @@ class PortScanTab:
             label = f"{d['port']}/tcp"
             self._tree.insert("", "end", values=(label, d["service"]))
         open_count = len(results)
-        host = self._host_var.get().strip()
+        host = self._scan_host
         self._status.configure(
             text=f"✅ {open_count} open port{'s' if open_count != 1 else ''} on {host}",
             text_color=theme.SUCCESS if open_count > 0 else theme.FG_DIM)
@@ -210,7 +219,7 @@ class PortScanTab:
     def _copy(self):
         if not self._results:
             return
-        host = self._host_var.get().strip()
+        host = self._scan_host
         lines = [f"Port scan — {host}", "Port\tService"]
         for d in self._results:
             lines.append(f"{d['port']}/tcp\t{d['service']}")

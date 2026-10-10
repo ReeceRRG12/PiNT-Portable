@@ -1,7 +1,7 @@
 # Pi Network Tools - PiNT Desktop 🍺  
 (formally PiNT-Portable & Port Identifier) 
 
-![Version](https://img.shields.io/badge/version-1.6%20Beta%201-orange)
+![Version](https://img.shields.io/badge/version-1.6%20Beta%202-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey)
 ![Protocol](https://img.shields.io/badge/protocols-LLDP%20%7C%20CDP%20%7C%20mDNS%20%7C%20ARP%20%7C%20SNMP-green)
 [![Website](https://img.shields.io/badge/website-pinetworktools.com-blue)](https://pinetworktools.com)
@@ -41,11 +41,11 @@ A lightweight desktop network tool for field technicians, with Windows executabl
 
 Visit **[pinetworktools.com](https://pinetworktools.com)** for more info, screenshots and feature overview.
 
-Download [PiNT Desktop 1.6 Beta 1](https://github.com/ReeceRRG12/PiNT-Portable/releases/tag/v1.6.0-beta.1):
+Download [PiNT Desktop 1.6 Beta 2](https://github.com/ReeceRRG12/PiNT-Portable/releases/tag/v1.6.0-beta.2):
 
-- Windows x64: `PiNT-1.6-beta.1-windows-x64.exe`
-- Mac with Apple Silicon: `PiNT-1.6-beta.1-macos-arm64.zip`
-- Mac with Intel: `PiNT-1.6-beta.1-macos-x64.zip`
+- Windows x64: `PiNT-1.6-beta.2-windows-x64.exe`
+- Mac with Apple Silicon: `PiNT-1.6-beta.2-macos-arm64.zip`
+- Mac with Intel: `PiNT-1.6-beta.2-macos-x64.zip`
 
 No Python installation is required. Extract the Mac ZIP to access `PiNT.app`.
 Version 1.6 is a beta for testing; [v1.5 remains the stable release](https://github.com/ReeceRRG12/PiNT-Portable/releases/tag/v1.5).
@@ -77,6 +77,15 @@ warnings or launch restrictions may apply. CI builds Windows x64, Apple Silicon
 and Intel packages and runs offline tests. Physical network capture acceptance
 testing and Apple distribution signing/notarization remain outstanding before
 promoting macOS support to a stable release.
+
+## What's new in 1.6 Beta 2
+
+- Fix SNMP OID decoding, malformed responses and WALK boundaries; handle empty LLDP descriptions.
+- Start DHCP capture before sending requests, match replies to the client, and retain complete option lists.
+- Keep Port Monitor on the selected adapter and allow switching back to Auto-detect.
+- Report TCP hostname failures, recover scan controls, close sockets reliably, and preserve result labels.
+- Keep discovered spreadsheet values as literal text, handle control characters, and export mDNS CSV as UTF-8 with save-error feedback.
+- Add 30 offline regression tests. Hardware acceptance and signing requirements remain unchanged.
 
 ## What's new in 1.6 Beta 1
 
@@ -213,7 +222,8 @@ PiNT-Portable/
 | v1.3    | Internal code refactor: centralised theme tokens, shared widget helpers in `gui/widgets.py`, scanners grouped into a `network/` package |
 | v1.4    | ARP tab XLSX export for PiNT Live: flat IP / MAC / Hostname workbook in the schema PiNT Live's *Load ARP List…* sidebar consumes |
 | **v1.5**| **Stable** - mDNS IP read directly from packet source address; removes active resolve step and Resolve IPs button; adds GitHub Actions Windows EXE build |
-| **v1.6 Beta 1** | **Current beta** - refreshed desktop UI, native macOS packages for Apple Silicon and Intel, Windows adapter improvements, saved settings, and CDP/SNMP/mDNS fixes |
+| **v1.6 Beta 2** | **Current beta** - protocol, DHCP, adapter, TCP scan and export bug fixes; 30 new regression tests |
+| v1.6 Beta 1 | Previous beta - refreshed desktop UI, native macOS packages for Apple Silicon and Intel, Windows adapter improvements, saved settings, and CDP/SNMP/mDNS fixes |
 | Future  | Integrated iPerf3 tester |
 
 ---

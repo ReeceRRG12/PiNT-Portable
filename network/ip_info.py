@@ -1,4 +1,5 @@
 import socket
+import secrets
 from scapy.all import (
     sniff, sendp, Ether, IP, UDP, BOOTP, DHCP,
     conf, get_if_list, get_if_hwaddr, get_if_addr
@@ -82,7 +83,8 @@ def get_dhcp_options(timeout=10, iface=None):
 
         # Build a DHCP INFORM — tells the server we already have an IP,
         # please just send us the options
-        xid = 0xdeadbeef
+        xid = secrets.randbits(32)
+        mac_bytes = bytes.fromhex(my_mac.replace(":", "").replace("-", ""))
 
         dhcp_inform = (
             Ether(dst="ff:ff:ff:ff:ff:ff", src=my_mac) /
@@ -92,7 +94,7 @@ def get_dhcp_options(timeout=10, iface=None):
                 op=1,
                 xid=xid,
                 ciaddr=my_ip,
-                chaddr=bytes.fromhex(my_mac.replace(":", "").replace("-", ""))
+                chaddr=mac_bytes
             ) /
             DHCP(options=[
                 ("message-type", "inform"),
@@ -102,24 +104,25 @@ def get_dhcp_options(timeout=10, iface=None):
             ])
         )
 
-        captured = []
-
         def _is_dhcp_ack(pkt):
             return (
-                pkt.haslayer(DHCP) and
+                pkt.haslayer(BOOTP) and pkt.haslayer(DHCP) and
+                pkt[BOOTP].op == 2 and
                 pkt[BOOTP].xid == xid and
+                pkt[BOOTP].chaddr[:len(mac_bytes)] == mac_bytes and
                 any(opt[0] == "message-type" and opt[1] == 5
                     for opt in pkt[DHCP].options
-                    if isinstance(opt, tuple))
+                    if isinstance(opt, tuple) and len(opt) > 1)
             )
 
-        sendp(dhcp_inform, iface=iface, verbose=False)
         result = sniff(
             iface=iface,
             lfilter=_is_dhcp_ack,
             count=1,
             timeout=timeout,
-            store=True
+            store=True,
+            # Open the capture socket before sending, so a fast ACK is not lost.
+            started_callback=lambda: sendp(dhcp_inform, iface=iface, verbose=False)
         )
 
         if not result:
@@ -128,10 +131,11 @@ def get_dhcp_options(timeout=10, iface=None):
         pkt = result[0]
 
         for opt in pkt[DHCP].options:
-            if not isinstance(opt, tuple) or opt[0] == "end":
+            if not isinstance(opt, tuple) or not opt or opt[0] == "end":
                 continue
             opt_name_raw = opt[0]
-            opt_val      = opt[1] if len(opt) > 1 else ""
+            # Scapy expands multi-address options into (name, value1, value2, ...).
+            opt_val      = opt[1:] if len(opt) > 2 else (opt[1] if len(opt) > 1 else "")
 
             # Scapy returns some options by name, others by number
             # Try to get the numeric code
@@ -146,6 +150,7 @@ def get_dhcp_options(timeout=10, iface=None):
                     "NetBIOS_name_server": 44, "lease_time": 51,
                     "server_id": 54, "renewal_time": 58, "rebinding_time": 59,
                     "TFTP_server_name": 66, "bootfile_name": 67,
+                    "classless_static_routes": 121,
                     "message-type": None,
                 }
                 opt_num = name_to_num.get(opt_name_raw)

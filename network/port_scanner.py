@@ -94,13 +94,15 @@ def scan_ports(host, ports, timeout=1.0,
     open_ports = []
     total      = len(ports)
     completed  = 0
+    # Resolve once before starting workers. A DNS failure is a scan error,
+    # not evidence that every requested port is closed.
+    address = socket.gethostbyname(host) if total else host
 
     def _check(port):
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(timeout)
-            result = sock.connect_ex((host, port))
-            sock.close()
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.settimeout(timeout)
+                result = sock.connect_ex((address, port))
             return port if result == 0 else None
         except Exception:
             return None
